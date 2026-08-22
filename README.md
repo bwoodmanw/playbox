@@ -3,7 +3,7 @@
 A single-file creative playground for kids: paint, animation, stickers and music.
 Built to run in the Amazon Fire tablet's Silk browser under Amazon Kids.
 
-Everything lives in `index.html` — ~95 KB, no build step, no npm, no CDN,
+Everything lives in `index.html` — ~128 KB, no build step, no npm, no CDN,
 no analytics, and exactly **one network request** (the page itself). Nothing
 loads after that, which is what makes it work behind a locked-down kids browser.
 
@@ -60,7 +60,7 @@ background, save the whole thing as a picture.
   files.
 - Instrument pads are tuned to a **pentatonic scale**, so nothing a child
   plays sounds wrong.
-- **16-step, 6-track sequencer** (Big mode). Every track can be pointed at any
+- **16-step, 6-track sequencer** (Big and Teen). Every track can be pointed at any
   of the 22 sounds.
 - **4 preset songs** — Rock beat, Twinkle, Robot dance, Silly — plus room to
   save 6 of your own.
@@ -101,9 +101,9 @@ older kid will solve it.
 
 In the tablet browser's `localStorage`, on that device only. Nothing is
 uploaded anywhere. Pictures are downscaled to 640 px and stored as JPEG
-(~7 KB each); cartoon frames go to 320 px (~2.5 KB each). Capped at 12 saved
-items so the browser's storage quota is never hit — saving a thirteenth drops
-the oldest. Clearing the browser's data erases saved work.
+(~7 KB each); cartoon frames go to 320 px (~2.5 KB each). Capped at 48 saved
+items so the browser's storage quota is never hit — saving past that drops the
+oldest. Clearing the browser's data erases saved work.
 
 ---
 
