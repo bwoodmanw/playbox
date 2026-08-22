@@ -77,10 +77,26 @@ part you want (so a sheet of several drawings can be cut up one at a time),
 then pick *Trace it now*, *Keep the picture*, or *Add to My Traces* to keep it
 in a personal library. Stored on that device, 24 slots.
 
-**On a computer?** Drop the files into the `traces/` folder of this project,
-run `node tools/build-traces.mjs`, and push. They appear under
-**Traces → 📁 Added** on every device that opens the site — nothing has to be
-copied onto the tablet at all. See `traces/README.md`.
+**On a computer?** Drop the files into `traces/` and run:
+
+```bash
+python tools/update_sketches.py
+```
+
+That cuts any grid sheet into individual traces, rebuilds the manifest,
+commits and pushes in one go. They appear under **Traces → 📁 Added** on every
+device that opens the site — nothing has to be copied onto the tablet at all.
+
+Folders:
+
+| | |
+|---|---|
+| `traces/` | the individual traces the app serves |
+| `traces/sheets/` | grids waiting to be cut up (not published) |
+| `traces/_private/` | never scanned, never published |
+
+The sheet's filename sets the labels: `torso.png` gives `torso-01.png` …
+which the app lists as "Torso 01". See `traces/README.md`.
 
 Either way, Playbox drops the white background out so the scene behind still
 shows through.
