@@ -37,10 +37,16 @@ NO_PUSH = "--no-push" in sys.argv
 
 
 def slug(name):
-    s = os.path.splitext(name)[0].lower()
-    s = re.sub(r"\b(cut|sheet|sheets|final|copy|\d+)\b", " ", s)
-    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
-    return s or "trace"
+    """Turn a sheet filename into a label prefix.
+
+    Split on any separator and drop the noise words and the count, so
+    dog_sheet_30.png becomes "dog" and the app lists "Dog 01".
+    """
+    NOISE = {"cut", "cutsheet", "sheet", "sheets", "final", "copy", "v2", "new"}
+    stem = os.path.splitext(name)[0].lower()
+    words = [w for w in re.split("[^a-z0-9]+", stem) if w]
+    words = [w for w in words if w not in NOISE and not w.isdigit()]
+    return "-".join(words) or "trace"
 
 
 def find_grid(im, want=None):
@@ -241,6 +247,21 @@ def strip_rules(cell):
     return cell.crop((l, t, r, b))
 
 
+def add_margin(cell, frac=0.07):
+    """Sit the drawing on a slightly larger white sheet.
+
+    Where the artwork touches the cell's rule line in the source, stripping
+    that line necessarily takes a sliver of the drawing with it - the dogs'
+    paws are drawn right on the line. Nothing can recover those few pixels,
+    but a white margin means the result never reads as cut off at the edge.
+    """
+    w, h = cell.size
+    m = max(6, int(min(w, h) * frac))
+    out = Image.new("RGB", (w + m * 2, h + m * 2), (255, 255, 255))
+    out.paste(cell.convert("RGB"), (m, m))
+    return out
+
+
 def erase_cell_number(cell):
     """Paint out the numeral in the top-left corner, but only if what is there
     is small enough to be a numeral rather than part of the drawing."""
@@ -277,6 +298,7 @@ def slice_sheet(path, prefix, want=None):
             if box:
                 cell = cell.crop(box)
             cell = strip_rules(cell)      # any rule fragment left at the edge
+            cell = add_margin(cell)
             if cell.width < 20 or cell.height < 20:
                 n -= 1
                 continue
