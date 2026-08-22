@@ -2,6 +2,7 @@ Thumbs.db
 .DS_Store
 desktop.ini
 
-# source grids and anything private: only the slices get published
+# source grids, held material, anything private: only the slices get published
 traces/sheets/
 traces/_private/
+traces/_hold/
