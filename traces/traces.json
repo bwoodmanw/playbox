@@ -364,126 +364,6 @@
     "name": "Example hot air balloon"
   },
   {
-    "file": "pose-01.png",
-    "name": "Pose 01"
-  },
-  {
-    "file": "pose-02.png",
-    "name": "Pose 02"
-  },
-  {
-    "file": "pose-03.png",
-    "name": "Pose 03"
-  },
-  {
-    "file": "pose-04.png",
-    "name": "Pose 04"
-  },
-  {
-    "file": "pose-05.png",
-    "name": "Pose 05"
-  },
-  {
-    "file": "pose-06.png",
-    "name": "Pose 06"
-  },
-  {
-    "file": "pose-07.png",
-    "name": "Pose 07"
-  },
-  {
-    "file": "pose-08.png",
-    "name": "Pose 08"
-  },
-  {
-    "file": "pose-09.png",
-    "name": "Pose 09"
-  },
-  {
-    "file": "pose-10.png",
-    "name": "Pose 10"
-  },
-  {
-    "file": "pose-11.png",
-    "name": "Pose 11"
-  },
-  {
-    "file": "pose-12.png",
-    "name": "Pose 12"
-  },
-  {
-    "file": "pose-13.png",
-    "name": "Pose 13"
-  },
-  {
-    "file": "pose-14.png",
-    "name": "Pose 14"
-  },
-  {
-    "file": "pose-15.png",
-    "name": "Pose 15"
-  },
-  {
-    "file": "pose-16.png",
-    "name": "Pose 16"
-  },
-  {
-    "file": "pose-17.png",
-    "name": "Pose 17"
-  },
-  {
-    "file": "pose-18.png",
-    "name": "Pose 18"
-  },
-  {
-    "file": "pose-19.png",
-    "name": "Pose 19"
-  },
-  {
-    "file": "pose-20.png",
-    "name": "Pose 20"
-  },
-  {
-    "file": "pose-21.png",
-    "name": "Pose 21"
-  },
-  {
-    "file": "pose-22.png",
-    "name": "Pose 22"
-  },
-  {
-    "file": "pose-23.png",
-    "name": "Pose 23"
-  },
-  {
-    "file": "pose-24.png",
-    "name": "Pose 24"
-  },
-  {
-    "file": "pose-25.png",
-    "name": "Pose 25"
-  },
-  {
-    "file": "pose-26.png",
-    "name": "Pose 26"
-  },
-  {
-    "file": "pose-27.png",
-    "name": "Pose 27"
-  },
-  {
-    "file": "pose-28.png",
-    "name": "Pose 28"
-  },
-  {
-    "file": "pose-29.png",
-    "name": "Pose 29"
-  },
-  {
-    "file": "pose-30.png",
-    "name": "Pose 30"
-  },
-  {
     "file": "princess-01.png",
     "name": "Princess 01"
   },
@@ -722,5 +602,13 @@
   {
     "file": "torso-30.png",
     "name": "Torso 30"
+  },
+  {
+    "file": "torso-31.png",
+    "name": "Torso 31"
+  },
+  {
+    "file": "torso-32.png",
+    "name": "Torso 32"
   }
 ]
