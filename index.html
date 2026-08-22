@@ -387,6 +387,7 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;p
 </div>
 
 <input type="file" accept="image/*" id="imgIn" style="display:none">
+<input type="file" accept="application/json,.json" id="bakIn" style="display:none">
 <div id="modal"><div class="sheet" id="sheet"></div></div>
 <div id="toast"></div>
 
@@ -405,6 +406,20 @@ var body = document.body;
 var DPR = Math.min(window.devicePixelRatio || 1, 2);
 
 /* ---------- persistence (private mode can throw) ---------- */
+/* Nothing here is tied to an account. Everything lives in this browser's
+   localStorage, for this site, on this device, under this profile. Ask the
+   browser to treat it as persistent so it is not evicted when space runs
+   short - that is the single biggest cause of a child losing their work. */
+function requestPersistence(){
+  try{
+    if(navigator.storage && navigator.storage.persist && navigator.storage.persisted){
+      navigator.storage.persisted().then(function(already){
+        if(!already) navigator.storage.persist();
+      });
+    }
+  }catch(e){}
+}
+
 var store = {
   get: function(k, dflt){
     try{ var v = localStorage.getItem('playbox.' + k); return v === null ? dflt : JSON.parse(v); }
@@ -1257,7 +1272,8 @@ var TPL_CATS = [
   { id:'anime',   name:'Anime',    emoji:'\uD83C\uDF38' },
   { id:'teen',    name:'Teen',     emoji:'\uD83D\uDEF9' },
   { id:'adult',   name:'Grown-up', emoji:'\uD83C\uDFA8' },
-  { id:'pattern', name:'Patterns', emoji:'\uD83C\uDF00' }
+  { id:'pattern', name:'Patterns', emoji:'\uD83C\uDF00' },
+  { id:'mine',    name:'My Traces', emoji:'\u2B50' }
 ];
 
 var TEMPLATES = [
@@ -2258,11 +2274,13 @@ function openTemplates(){
       if(t.id === 'blank') return true;
       return cat === 'all' || (t.cat || 'easy') === cat;
     });
+    var mine = store.get('mytraces', []);
     var html = '<h2>Colouring pages</h2><p>Pick a picture to trace over and colour in.</p><div class="pickgrid">';
     TPL_CATS.forEach(function(c){
-      var n = c.id === 'all'
-        ? TEMPLATES.filter(function(t){ return t.id !== 'blank'; }).length
-        : TEMPLATES.filter(function(t){ return (t.cat||'easy') === c.id; }).length;
+      var n = c.id === 'mine' ? mine.length
+            : c.id === 'all'
+              ? TEMPLATES.filter(function(t){ return t.id !== 'blank'; }).length
+              : TEMPLATES.filter(function(t){ return (t.cat||'easy') === c.id; }).length;
       html += '<button data-cat="' + c.id + '" class="' + (cat===c.id?'sel':'') + '">' +
               '<span class="pe">' + c.emoji + '</span>' + c.name + ' (' + n + ')</button>';
     });
@@ -2271,11 +2289,38 @@ function openTemplates(){
       html += '<button data-paper="' + p.id + '" class="' + (paper===p.id?'sel':'') + '">' + p.name + '</button>';
     });
     html += '</div><div class="tplgrid">';
-    list.forEach(function(t){
-      html += '<button data-tpl="' + t.id + '"><canvas width="150" height="100" data-prev="' + t.id + '"></canvas>' + t.name + '</button>';
-    });
-    html += '</div><div class="sheetrow"><button id="tplNo">Cancel</button></div>';
+    if(cat === 'mine'){
+      if(mine.length === 0){
+        html += '<div style="grid-column:1/-1;color:#5b5175;font-weight:600;padding:14px;line-height:1.6">' +
+                'Nothing here yet. Use <b>\uD83D\uDCF7 Import</b> while painting, drag a box round ' +
+                'one drawing, then choose <b>Add to My Traces</b>.</div>';
+      }
+      mine.forEach(function(it, i){
+        html += '<button data-mine="' + i + '"><img src="' + it.data +
+                '" style="width:100%;height:66px;object-fit:contain;background:#fff;border-radius:10px;display:block">' +
+                'Mine ' + (i+1) + '</button>';
+      });
+    } else {
+      list.forEach(function(t){
+        html += '<button data-tpl="' + t.id + '"><canvas width="150" height="100" data-prev="' + t.id + '"></canvas>' + t.name + '</button>';
+      });
+    }
+    html += '</div>';
+    if(cat === 'mine' && mine.length){
+      html += '<div class="sheetrow" style="margin-bottom:10px">' +
+              '<button class="" id="mineDel">\uD83D\uDDD1\uFE0F Delete my traces</button></div>';
+    }
+    html += '<div class="sheetrow"><button id="tplNo">Cancel</button></div>';
     showModal(html);
+    bindAll('[data-mine]', function(b){
+      closeModal();
+      applyMyTrace(mine[parseInt(b.getAttribute('data-mine'), 10)]);
+    });
+    if($('mineDel')) $('mineDel').onclick = function(){
+      grownUpGate('Delete every trace you added?', function(){
+        store.del('mytraces'); closeModal(); toast('My Traces cleared');
+      });
+    };
 
     /* thumbnails run the very same draw code at small size */
     var prevs = $('sheet').querySelectorAll('canvas[data-prev]');
@@ -2329,7 +2374,7 @@ $('imgIn').addEventListener('change', function(){
   var reader = new FileReader();
   reader.onload = function(ev){
     var img = new Image();
-    img.onload = function(){ chooseImportStyle(img); };
+    img.onload = function(){ openCropper(img); };
     img.onerror = function(){ toast('Could not read that picture'); };
     img.src = ev.target.result;
   };
@@ -2337,17 +2382,138 @@ $('imgIn').addEventListener('change', function(){
   reader.readAsDataURL(f);
 });
 
+/* Drag a box over an imported picture to take just one piece of it. A sheet
+   with many drawings on it can be cut into one trace at a time this way. */
+function openCropper(img){
+  var maxW = 520, maxH = 380;
+  var sc = Math.min(maxW / img.width, maxH / img.height, 1);
+  var vw = Math.round(img.width * sc), vh = Math.round(img.height * sc);
+
+  showModal('<h2>Pick a piece</h2><p>Drag a box around the part you want, or use the ' +
+    'whole picture.</p>' +
+    '<div style="position:relative;display:inline-block;max-width:100%">' +
+      '<canvas id="cropImg" width="' + vw + '" height="' + vh + '" ' +
+        'style="max-width:100%;border-radius:12px;border:2px solid var(--line);display:block"></canvas>' +
+      '<canvas id="cropBox" width="' + vw + '" height="' + vh + '" ' +
+        'style="position:absolute;left:0;top:0;max-width:100%;touch-action:none"></canvas>' +
+    '</div>' +
+    '<div class="sheetrow" style="margin-top:14px">' +
+      '<button id="cropNo">Cancel</button>' +
+      '<button id="cropAll">Whole picture</button>' +
+      '<button class="go" id="cropUse">Use the box</button></div>');
+
+  var iv = $('cropImg'), ig = iv.getContext('2d');
+  ig.drawImage(img, 0, 0, vw, vh);
+  var bx = $('cropBox'), bg = bx.getContext('2d');
+  var box = null, dragging = false;
+
+  function paint(){
+    bg.clearRect(0, 0, vw, vh);
+    if(!box) return;
+    bg.fillStyle = 'rgba(36,26,61,.35)';
+    bg.fillRect(0, 0, vw, vh);
+    var x = Math.min(box.x0, box.x1), y = Math.min(box.y0, box.y1);
+    var w = Math.abs(box.x1 - box.x0), h = Math.abs(box.y1 - box.y0);
+    bg.clearRect(x, y, w, h);
+    bg.strokeStyle = '#ff4d8d'; bg.lineWidth = 3;
+    bg.strokeRect(x, y, w, h);
+  }
+  function at(e){
+    var r = bx.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * (vw / r.width),
+             y: (e.clientY - r.top) * (vh / r.height) };
+  }
+  bx.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    var p = at(e);
+    box = { x0:p.x, y0:p.y, x1:p.x, y1:p.y };
+    dragging = true;
+    try{ bx.setPointerCapture(e.pointerId); }catch(err){}
+    paint();
+  });
+  bx.addEventListener('pointermove', function(e){
+    if(!dragging) return;
+    e.preventDefault();
+    var p = at(e);
+    box.x1 = p.x; box.y1 = p.y;
+    paint();
+  });
+  bx.addEventListener('pointerup', function(){ dragging = false; });
+  bx.addEventListener('pointercancel', function(){ dragging = false; });
+
+  function cropTo(){
+    if(!box) return null;
+    var x = Math.min(box.x0, box.x1) / sc, y = Math.min(box.y0, box.y1) / sc;
+    var w = Math.abs(box.x1 - box.x0) / sc, h = Math.abs(box.y1 - box.y0) / sc;
+    if(w < 12 || h < 12) return null;
+    var c = document.createElement('canvas');
+    c.width = Math.round(w); c.height = Math.round(h);
+    c.getContext('2d').drawImage(img, Math.round(x), Math.round(y),
+                                 Math.round(w), Math.round(h), 0, 0, c.width, c.height);
+    return c;
+  }
+
+  $('cropNo').onclick = closeModal;
+  $('cropAll').onclick = function(){ closeModal(); chooseImportStyle(img); };
+  $('cropUse').onclick = function(){
+    var c = cropTo();
+    if(!c){ toast('Drag a box first'); return; }
+    closeModal(); chooseImportStyle(c);
+  };
+}
+
 function chooseImportStyle(img){
-  showModal('<h2>Use this picture</h2><p>Turn it into lines you can colour in, or drop it ' +
-    'straight in and paint over the top.</p><div class="optgrid">' +
-    '<button id="impTrace"><span class="oe">\u270F\uFE0F</span><span class="on2">Make a trace</span>' +
+  showModal('<h2>Use this picture</h2><p>Turn it into lines you can colour in, keep it as a ' +
+    'photo to paint over, or save it to your own trace collection.</p><div class="optgrid">' +
+    '<button id="impTrace"><span class="oe">\u270F\uFE0F</span><span class="on2">Trace it now</span>' +
       '<span class="od">Outlines only</span></button>' +
     '<button id="impPhoto"><span class="oe">\uD83D\uDDBC\uFE0F</span><span class="on2">Keep the picture</span>' +
       '<span class="od">Paint on top</span></button>' +
+    '<button id="impSave"><span class="oe">\u2B50</span><span class="on2">Add to My Traces</span>' +
+      '<span class="od">Keep it to use again</span></button>' +
     '</div><div class="sheetrow"><button id="impNo">Cancel</button></div>');
   $('impNo').onclick = closeModal;
   $('impTrace').onclick = function(){ closeModal(); placeImport(img, true); };
   $('impPhoto').onclick = function(){ closeModal(); placeImport(img, false); };
+  $('impSave').onclick = function(){ closeModal(); saveMyTrace(img); };
+}
+
+/* ---------- My Traces: outlines the user cut out themselves ---------- */
+var MAX_TRACES = 24;
+
+function saveMyTrace(img){
+  var maxW = 520;
+  var sc = Math.min(1, maxW / img.width);
+  var w = Math.max(1, Math.round(img.width * sc)), h = Math.max(1, Math.round(img.height * sc));
+  var o = toOutline(img, w, h);
+  var data;
+  try{ data = o.toDataURL('image/png'); }      /* PNG keeps the transparency */
+  catch(e){ toast('Could not save that one'); return; }
+
+  var list = store.get('mytraces', []);
+  list.unshift({ id: Date.now(), data: data });
+  while(list.length > MAX_TRACES) list.pop();
+  var ok = store.set('mytraces', list);
+  while(!ok && list.length > 1){ list.pop(); ok = store.set('mytraces', list); }
+  if(!ok){ toast('No room - delete some traces first'); return; }
+  toast('Added to My Traces');
+  placeImport(img, true);
+}
+
+function applyMyTrace(it){
+  var img = new Image();
+  img.onload = function(){
+    pushUndo();
+    clearBoard();
+    var z = cssSize(DC);
+    var sc = Math.min(z.w / img.width, z.h / img.height);
+    var w = img.width * sc, h = img.height * sc;
+    DX.drawImage(img, (z.w - w)/2, (z.h - h)/2, w, h);
+    afterEdit();
+    toast('Ready to colour!');
+  };
+  img.onerror = function(){ toast('Could not open that one'); };
+  img.src = it.data;
 }
 
 /* fit the picture inside the canvas without distorting it */
@@ -3605,12 +3771,14 @@ function buildGallery(){
   if(all.length === 0){
     g.innerHTML = '<div class="empty" style="grid-column:1/-1">Nothing saved yet.<br>' +
                   'Make something in Paint, Animate or Stickers, then tap Save.</div>';
+    g.appendChild(galleryFooter(all, items));   /* Restore must be reachable when empty */
     return;
   }
   if(items.length === 0){
     g.innerHTML = '<div class="empty" style="grid-column:1/-1">No ' +
                   (GAL_KINDS.filter(function(k){ return k.id===S.galFilter; })[0]||{}).name +
                   ' yet.<br>Tap Everything to see the rest.</div>';
+    g.appendChild(galleryFooter(all, items));
     return;
   }
 
@@ -3672,24 +3840,135 @@ function buildGallery(){
     g.appendChild(d);
   });
 
+  g.appendChild(galleryFooter(all, items));
+}
+
+function galleryFooter(all, items){
   var foot = document.createElement('div');
   foot.style.cssText = 'grid-column:1/-1;text-align:center;padding-top:10px';
-  var count = document.createElement('div');
-  count.style.cssText = 'color:#5b5175;font-weight:700;font-size:14px;margin-bottom:10px';
-  count.textContent = 'Showing ' + items.length + ' of ' + all.length +
-                      ' \u00B7 room for ' + Math.max(0, MAX_SAVES - all.length) + ' more';
-  foot.appendChild(count);
-  var wb = document.createElement('button');
-  wb.className = 'act warn'; wb.style.margin = '0 auto';
-  wb.textContent = '\uD83D\uDDD1\uFE0F Delete everything';
-  wb.addEventListener('click', function(){
-    grownUpGate('Delete everything saved?', function(){
-      store.del('gallery'); S.selIds = []; buildGallery(); toast('All cleared');
+
+  if(all.length){
+    var count = document.createElement('div');
+    count.style.cssText = 'color:#5b5175;font-weight:700;font-size:14px;margin-bottom:10px';
+    count.textContent = 'Showing ' + items.length + ' of ' + all.length +
+                        ' · room for ' + Math.max(0, MAX_SAVES - all.length) + ' more';
+    foot.appendChild(count);
+
+    var wb = document.createElement('button');
+    wb.className = 'act warn'; wb.style.margin = '0 auto';
+    wb.textContent = '🗑️ Delete everything';
+    wb.addEventListener('click', function(){
+      grownUpGate('Delete everything saved?', function(){
+        store.del('gallery'); S.selIds = []; buildGallery(); toast('All cleared');
+      });
     });
-  });
-  foot.appendChild(wb);
-  g.appendChild(foot);
+    foot.appendChild(wb);
+  }
+
+  var tools = document.createElement('div');
+  tools.style.cssText = 'margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap';
+  var bak = document.createElement('button');
+  bak.className = 'act'; bak.textContent = '💾 Back up';
+  bak.addEventListener('click', exportBackup);
+  tools.appendChild(bak);
+  var res = document.createElement('button');
+  res.className = 'act'; res.textContent = '📂 Restore';
+  res.addEventListener('click', function(){ $('bakIn').click(); });
+  tools.appendChild(res);
+  foot.appendChild(tools);
+
+  var note = document.createElement('div');
+  note.id = 'storeNote';
+  note.style.cssText = 'color:#5b5175;font-weight:600;font-size:12px;margin-top:10px;line-height:1.5';
+  note.textContent = 'Saved in this browser on this tablet only — no account needed.';
+  foot.appendChild(note);
+  describeStorage();
+  return foot;
 }
+
+/* Report how much room is left and whether the browser promised to keep it. */
+function describeStorage(){
+  var el = $('storeNote');
+  if(!el) return;
+  var base = 'Saved in this browser on this tablet only \u2014 no account needed. ';
+  try{
+    if(navigator.storage && navigator.storage.estimate){
+      navigator.storage.estimate().then(function(est){
+        var used = est.usage ? (est.usage/1048576).toFixed(1) : '?';
+        var cap  = est.quota ? (est.quota/1048576).toFixed(0) : '?';
+        var msg = base + 'Using ' + used + ' MB of about ' + cap + ' MB.';
+        if(navigator.storage.persisted){
+          navigator.storage.persisted().then(function(p){
+            el.textContent = msg + (p ? ' The tablet has been asked to keep it safe.'
+                                      : ' Back up now and then, just in case.');
+          });
+        } else el.textContent = msg;
+      });
+    }
+  }catch(e){}
+}
+
+var BACKUP_KEYS = ['gallery','mytraces','songs','grid','seqRows','bpm',
+                   'customColors','paintEnv','animEnv','sceneEnv'];
+
+function exportBackup(){
+  var data = { playbox: 1, when: Date.now() };
+  BACKUP_KEYS.forEach(function(k){ data[k] = store.get(k, null); });
+  var json = JSON.stringify(data);
+  var name = 'playbox-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  try{
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1500);
+    toast('Backup saved to your downloads');
+  }catch(e){
+    showModal('<h2>Backup</h2><p>This browser will not let the page save a file. ' +
+      'Open Playbox in the grown-up browser to back up, or keep the pictures by ' +
+      'pressing and holding each one.</p>' +
+      '<div class="sheetrow"><button class="go" id="bkNo">Close</button></div>');
+    $('bkNo').onclick = closeModal;
+  }
+}
+
+$('bakIn').addEventListener('change', function(){
+  var f = this.files && this.files[0];
+  this.value = '';
+  if(!f) return;
+  var r = new FileReader();
+  r.onload = function(ev){
+    var data;
+    try{ data = JSON.parse(ev.target.result); }
+    catch(e){ toast('That is not a Playbox backup'); return; }
+    if(!data || !data.playbox){ toast('That is not a Playbox backup'); return; }
+    grownUpGate('Restore this backup? It replaces what is saved now.', function(){
+      var restored = 0;
+      BACKUP_KEYS.forEach(function(k){
+        if(data[k] !== null && data[k] !== undefined){
+          if(store.set(k, data[k])) restored++;
+        }
+      });
+      /* pull the restored settings back into the running app */
+      seqRows = store.get('seqRows', seqRows);
+      grid = store.get('grid', grid);
+      bpm = store.get('bpm', bpm);
+      S.customColors = store.get('customColors', []);
+      S.paintEnv = store.get('paintEnv', 'none');
+      S.animEnv = store.get('animEnv', 'none');
+      S.sceneEnv = store.get('sceneEnv', 'none');
+      buildColors('paintColors'); buildColors('animColors');
+      buildGallery();
+      toast('Restored ' + restored + ' things');
+    });
+  };
+  r.onerror = function(){ toast('Could not read that file'); };
+  r.readAsText(f);
+});
 
 function viewBig(it){
   showModal('<h2>Nice work!</h2><img src="' + it.data + '" style="width:100%;border-radius:14px;margin-bottom:13px" alt="">' +
@@ -3852,13 +4131,15 @@ window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', function(){ setTimeout(onResize, 300); });
 
 applyAge();
+requestPersistence();
 go('home');
 
 /* exposed only so the page can be smoke-tested from the console */
 window.__playbox = { S:S, SOUNDS:SOUNDS, TEMPLATES:TEMPLATES, TOOLS:TOOLS, SHAPES:SHAPES,
                      PRESETS:PRESETS, TPL_CATS:TPL_CATS, GAL_KINDS:GAL_KINDS, ENVIRONMENTS:ENVIRONMENTS,
                      ENV_CATS:ENV_CATS, renderTemplate:renderTemplate, renderEnv:renderEnv, flatten:flatten,
-                     placeImport:placeImport, toOutline:toOutline, openTemplates:openTemplates, go:go };
+                     placeImport:placeImport, toOutline:toOutline, openTemplates:openTemplates,
+                     openCropper:openCropper, saveMyTrace:saveMyTrace, exportBackup:exportBackup, go:go };
 
 })();
 </script>
