@@ -4,8 +4,10 @@ A single-file creative playground for kids: paint, animation, stickers and music
 Built to run in the Amazon Fire tablet's Silk browser under Amazon Kids.
 
 Everything lives in `index.html` — ~128 KB, no build step, no npm, no CDN,
-no analytics, and exactly **one network request** (the page itself). Nothing
-loads after that, which is what makes it work behind a locked-down kids browser.
+no analytics, and exactly **one network request to start** (the page itself).
+That is what makes it work behind a locked-down kids browser. The only
+additional requests happen if you put files in `traces/` — those load lazily,
+when the trace picker is first opened, never at page load.
 
 ---
 
@@ -66,6 +68,28 @@ background, save the whole thing as a picture.
   save 6 of your own.
 - Tempo control from 50 to 200 bpm.
 
+### 📁 Adding your own traces
+
+Two ways, depending on where the picture is.
+
+**On the tablet already?** Use **📷 Import** in Paint. Drag a box round the
+part you want (so a sheet of several drawings can be cut up one at a time),
+then pick *Trace it now*, *Keep the picture*, or *Add to My Traces* to keep it
+in a personal library. Stored on that device, 24 slots.
+
+**On a computer?** Drop the files into the `traces/` folder of this project,
+run `node tools/build-traces.mjs`, and push. They appear under
+**Traces → 📁 Added** on every device that opens the site — nothing has to be
+copied onto the tablet at all. See `traces/README.md`.
+
+Either way, Playbox drops the white background out so the scene behind still
+shows through.
+
+Only add art you have the rights to. Characters from anime, cartoons, games
+and films belong to their studios, and that does not change if an AI generated
+the drawing — an AI picture of a known character is still a picture of someone
+else's character. This site is public.
+
 ### 🖼️ My Stuff
 Everything saved, as thumbnails, with **filter and sort**: show everything,
 paintings, cartoons or stickers (each with a live count), ordered by newest,
@@ -97,10 +121,24 @@ Deleting saved work asks a small multiplication question first. It keeps a
 four-year-old from wiping the gallery. It is **not** a security boundary — an
 older kid will solve it.
 
-## Where things are saved
+## Where things are saved — and how to not lose it
 
-In the tablet browser's `localStorage`, on that device only. Nothing is
-uploaded anywhere. Pictures are downscaled to 640 px and stored as JPEG
+There is **no account and no sync**. Everything lives in `localStorage`, keyed
+to this site, **on one device, in one browser, under one child profile**. It
+survives closing the app and rebooting the tablet. It does *not* survive
+clearing browsing data, a factory reset, a different profile, or a second
+tablet.
+
+Playbox asks the browser for **persistent storage** at start-up so the work is
+not evicted when space runs low, and My Stuff shows how much room is left and
+whether that request was granted. Use **💾 Back up** there now and then — it
+writes everything (art, cartoons, songs, My Traces, settings) to one file, and
+**📂 Restore** reads it back. Restore is reachable even when nothing is saved.
+
+The backup *download* may be blocked inside Amazon Kids; if so, do it from the
+grown-up profile.
+
+Nothing is uploaded anywhere. Pictures are downscaled to 640 px and stored as JPEG
 (~7 KB each); cartoon frames go to 320 px (~2.5 KB each). Capped at 48 saved
 items so the browser's storage quota is never hit — saving past that drops the
 oldest. Clearing the browser's data erases saved work.

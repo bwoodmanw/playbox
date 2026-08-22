@@ -1273,8 +1273,65 @@ var TPL_CATS = [
   { id:'teen',    name:'Teen',     emoji:'\uD83D\uDEF9' },
   { id:'adult',   name:'Grown-up', emoji:'\uD83C\uDFA8' },
   { id:'pattern', name:'Patterns', emoji:'\uD83C\uDF00' },
-  { id:'mine',    name:'My Traces', emoji:'\u2B50' }
+  { id:'mine',    name:'My Traces', emoji:'\u2B50' },
+  { id:'extra',   name:'Added',     emoji:'\uD83D\uDCC1' }
 ];
+
+/* ------------------------------------------------------------------
+   Traces shipped in the site's own traces/ folder. Fetched the first
+   time the picker opens - never during page load - so the app still
+   costs a single request to start. Any failure just means the category
+   is empty; nothing else breaks.
+   ------------------------------------------------------------------ */
+var EXTRA = null;
+function loadExtraTraces(done){
+  if(EXTRA !== null){ done(EXTRA); return; }
+  var give = function(list){ EXTRA = list || []; done(EXTRA); };
+  try{
+    if(!window.fetch){ give([]); return; }
+    fetch('traces/traces.json', { cache: 'no-cache' })
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(j){ give(Array.isArray(j) ? j : (j && j.traces) || []); })
+      .catch(function(){ give([]); });
+  }catch(e){ give([]); }
+}
+
+/* Line art is usually black on white. Dropping the white to transparent
+   keeps the scene visible behind it and leaves the lines to colour in. */
+function keyOutWhite(img, w, h){
+  var c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  var g = c.getContext('2d');
+  g.drawImage(img, 0, 0, w, h);
+  var d;
+  try{ d = g.getImageData(0, 0, w, h); }
+  catch(e){ return c; }
+  var a = d.data;
+  for(var i = 0; i < a.length; i += 4){
+    var lum = a[i]*0.299 + a[i+1]*0.587 + a[i+2]*0.114;
+    if(lum > 236) a[i+3] = 0;
+    else if(lum > 168) a[i+3] = Math.round(a[i+3] * (236 - lum) / 68);
+  }
+  g.putImageData(d, 0, 0);
+  return c;
+}
+
+function applyExtraTrace(entry){
+  var img = new Image();
+  img.onload = function(){
+    pushUndo();
+    clearBoard();
+    var z = cssSize(DC);
+    var sc = Math.min(z.w / img.width, z.h / img.height);
+    var w = Math.max(1, Math.round(img.width * sc)), h = Math.max(1, Math.round(img.height * sc));
+    var keyed = keyOutWhite(img, Math.round(w * DPR), Math.round(h * DPR));
+    DX.drawImage(keyed, (z.w - w)/2, (z.h - h)/2, w, h);
+    afterEdit();
+    toast('Ready to colour!');
+  };
+  img.onerror = function(){ toast('Could not load that one'); };
+  img.src = 'traces/' + entry.file;
+}
 
 var TEMPLATES = [
   { id:'blank', name:'Blank', draw:function(){} },
@@ -2265,6 +2322,10 @@ function renderTemplate(g, w, h, tplId, paperId, opaque){
 }
 
 function openTemplates(){
+  if(EXTRA === null){                 /* fetch once, then reopen for real */
+    loadExtraTraces(function(){ openTemplates(); });
+    return;
+  }
   var cat = S.tplCat || 'all';
   var paper = S.tplPaper || 'plain';
 
@@ -2277,7 +2338,8 @@ function openTemplates(){
     var mine = store.get('mytraces', []);
     var html = '<h2>Colouring pages</h2><p>Pick a picture to trace over and colour in.</p><div class="pickgrid">';
     TPL_CATS.forEach(function(c){
-      var n = c.id === 'mine' ? mine.length
+      var n = c.id === 'extra' ? (EXTRA ? EXTRA.length : 0)
+            : c.id === 'mine' ? mine.length
             : c.id === 'all'
               ? TEMPLATES.filter(function(t){ return t.id !== 'blank'; }).length
               : TEMPLATES.filter(function(t){ return (t.cat||'easy') === c.id; }).length;
@@ -2289,7 +2351,20 @@ function openTemplates(){
       html += '<button data-paper="' + p.id + '" class="' + (paper===p.id?'sel':'') + '">' + p.name + '</button>';
     });
     html += '</div><div class="tplgrid">';
-    if(cat === 'mine'){
+    if(cat === 'extra'){
+      var ex = EXTRA || [];
+      if(ex.length === 0){
+        html += '<div style="grid-column:1/-1;color:#5b5175;font-weight:600;padding:14px;line-height:1.6">' +
+                'Nothing added yet. A grown-up can drop pictures into the ' +
+                '<b>traces</b> folder of the Playbox project and push them \u2014 ' +
+                'they then appear here on every tablet, with nothing to copy across.</div>';
+      }
+      ex.forEach(function(e, i){
+        html += '<button data-extra="' + i + '"><img src="traces/' + e.file +
+                '" loading="lazy" style="width:100%;height:66px;object-fit:contain;background:#fff;' +
+                'border-radius:10px;display:block">' + e.name + '</button>';
+      });
+    } else if(cat === 'mine'){
       if(mine.length === 0){
         html += '<div style="grid-column:1/-1;color:#5b5175;font-weight:600;padding:14px;line-height:1.6">' +
                 'Nothing here yet. Use <b>\uD83D\uDCF7 Import</b> while painting, drag a box round ' +
@@ -2315,6 +2390,10 @@ function openTemplates(){
     bindAll('[data-mine]', function(b){
       closeModal();
       applyMyTrace(mine[parseInt(b.getAttribute('data-mine'), 10)]);
+    });
+    bindAll('[data-extra]', function(b){
+      closeModal();
+      applyExtraTrace((EXTRA || [])[parseInt(b.getAttribute('data-extra'), 10)]);
     });
     if($('mineDel')) $('mineDel').onclick = function(){
       grownUpGate('Delete every trace you added?', function(){
@@ -4139,7 +4218,9 @@ window.__playbox = { S:S, SOUNDS:SOUNDS, TEMPLATES:TEMPLATES, TOOLS:TOOLS, SHAPE
                      PRESETS:PRESETS, TPL_CATS:TPL_CATS, GAL_KINDS:GAL_KINDS, ENVIRONMENTS:ENVIRONMENTS,
                      ENV_CATS:ENV_CATS, renderTemplate:renderTemplate, renderEnv:renderEnv, flatten:flatten,
                      placeImport:placeImport, toOutline:toOutline, openTemplates:openTemplates,
-                     openCropper:openCropper, saveMyTrace:saveMyTrace, exportBackup:exportBackup, go:go };
+                     openCropper:openCropper, saveMyTrace:saveMyTrace, exportBackup:exportBackup,
+                     loadExtraTraces:loadExtraTraces, keyOutWhite:keyOutWhite,
+                     getExtra:function(){ return EXTRA; }, go:go };
 
 })();
 </script>
