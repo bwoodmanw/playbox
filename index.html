@@ -445,6 +445,7 @@ var S = {
   defaultDur: 0.5, animMusic: false,
   padCat: 'inst', padSound: 'bell',
   galFilter: 'all', galSort: 'new', selMode: false, selIds: [],
+  extraSet: null,
   paintEnv: store.get('paintEnv','none'),
   animEnv: store.get('animEnv','none'),
   sceneEnv: store.get('sceneEnv','none')
@@ -1314,6 +1315,20 @@ function keyOutWhite(img, w, h){
   }
   g.putImageData(d, 0, 0);
   return c;
+}
+
+/* 181 traces in one list is unusable, so group them by filename prefix:
+   dinosaur-01.png ... dinosaur-30.png become the "Dinosaur" set. */
+function extraGroups(){
+  var seen = {}, order = [];
+  (EXTRA || []).forEach(function(e, i){
+    var g = (e.file || '').replace(/-\d+\.[a-z]+$/i, '').replace(/\.[a-z]+$/i, '');
+    g = g.replace(/[-_]+/g, ' ').trim() || 'Other';
+    g = g.charAt(0).toUpperCase() + g.slice(1);
+    if(!seen[g]){ seen[g] = []; order.push(g); }
+    seen[g].push(i);
+  });
+  return { names: order, map: seen };
 }
 
 function applyExtraTrace(entry){
@@ -2578,13 +2593,26 @@ function openTemplates(){
     html += '</div><div class="tplgrid">';
     if(cat === 'extra'){
       var ex = EXTRA || [];
+      var grp = extraGroups();
+      if(ex.length && grp.names.length > 1){
+        if(grp.names.indexOf(S.extraSet) === -1) S.extraSet = grp.names[0];
+        html += '</div><p style="margin:10px 0 6px;font-weight:900">Sets</p><div class="pickgrid">';
+        grp.names.forEach(function(nm){
+          html += '<button data-eset="' + nm + '" class="' + (S.extraSet===nm?'sel':'') + '">' +
+                  nm + ' (' + grp.map[nm].length + ')</button>';
+        });
+        html += '</div><div class="tplgrid">';
+      }
       if(ex.length === 0){
         html += '<div style="grid-column:1/-1;color:#5b5175;font-weight:600;padding:14px;line-height:1.6">' +
                 'Nothing added yet. A grown-up can drop pictures into the ' +
                 '<b>traces</b> folder of the Playbox project and push them \u2014 ' +
                 'they then appear here on every tablet, with nothing to copy across.</div>';
       }
-      ex.forEach(function(e, i){
+      var show = (grp.names.length > 1 && grp.map[S.extraSet])
+        ? grp.map[S.extraSet] : ex.map(function(_, i){ return i; });
+      show.forEach(function(i){
+        var e = ex[i];
         html += '<button data-extra="' + i + '"><img src="traces/' + encodeURIComponent(e.file) +
                 '" loading="lazy" style="width:100%;height:66px;object-fit:contain;background:#fff;' +
                 'border-radius:10px;display:block">' + e.name + '</button>';
@@ -2616,6 +2644,7 @@ function openTemplates(){
       closeModal();
       applyMyTrace(mine[parseInt(b.getAttribute('data-mine'), 10)]);
     });
+    bindAll('[data-eset]', function(b){ S.extraSet = b.getAttribute('data-eset'); render(); });
     bindAll('[data-extra]', function(b){
       closeModal();
       applyExtraTrace((EXTRA || [])[parseInt(b.getAttribute('data-extra'), 10)]);

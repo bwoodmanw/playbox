@@ -18,7 +18,7 @@ which the app lists as "Torso 01".
 import os, re, sys, json, subprocess, shutil
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageFilter, ImageOps, ImageStat
 except ImportError:
     print("This needs Pillow:  python -m pip install Pillow")
     sys.exit(1)
@@ -30,6 +30,7 @@ PRIVATE = os.path.join(TRACES, "_private")
 STATE = os.path.join(SHEETS, ".sliced.json")
 
 IMG = (".png", ".jpg", ".jpeg", ".webp")
+HOLD = os.path.join(TRACES, "_hold")
 MAX_SIDE = 460
 DRY = "--dry-run" in sys.argv
 NO_PUSH = "--no-push" in sys.argv
@@ -42,8 +43,8 @@ def slug(name):
     return s or "trace"
 
 
-def find_grid(im):
-    """Locate the separator lines. Falls back to an even 10x3 split."""
+def find_grid(im, want=None):
+    """Locate the separator lines. Falls back to an even split."""
     g = im.convert("L")
     w, h = g.size
     px = g.load()
@@ -66,7 +67,8 @@ def find_grid(im):
         return n / float(t)
 
     def runs(vals, size):
-        hits = [i for i, v in enumerate(vals) if v > 0.80]
+        # a separator is either a ruled line (nearly all dark) or a blank gap
+        hits = [i for i, v in enumerate(vals) if v > 0.80 or v < 0.004]
         out, run = [], []
         for i in hits:
             if run and i - run[-1] > 2:
@@ -81,15 +83,73 @@ def find_grid(im):
 
     xs = [0] + vcols + [w]
     ys = [0] + hrows + [h]
-    if not (2 <= len(xs) - 1 <= 15 and 1 <= len(ys) - 1 <= 10):
-        xs = [round(w * i / 10.0) for i in range(11)]
-        ys = [round(h * i / 3.0) for i in range(4)]
+    cols, rows = len(xs) - 1, len(ys) - 1
+
+    ok = 2 <= cols <= 15 and 1 <= rows <= 10
+    if ok and want and cols * rows != want:
+        ok = False                      # trust the count in the filename
+    if not ok:
+        cols, rows = even_grid(w, h, want or 30)
+        xs = [round(w * i / float(cols)) for i in range(cols + 1)]
+        ys = [round(h * i / float(rows)) for i in range(rows + 1)]
     return xs, ys
 
 
-def slice_sheet(path, prefix):
+def even_grid(w, h, n):
+    """Pick the factor pair of n whose cells come out closest to portrait."""
+    best, score = (10, 3), 1e9
+    for cols in range(1, n + 1):
+        if n % cols:
+            continue
+        rows = n // cols
+        aspect = (w / float(cols)) / (h / float(rows))
+        d = abs(aspect - 0.78)
+        if d < score:
+            best, score = (cols, rows), d
+    return best
+
+
+def is_lineart(im):
+    """Line art is mostly white paper with a little ink on it. Anything else
+    - colour, or dark shaded art - gets converted to outlines."""
+    g = im.convert("L")
+    hist = g.histogram()
+    total = float(sum(hist)) or 1.0
+    white = sum(hist[240:]) / total
+    mean = ImageStat.Stat(g).mean[0]
+    return white > 0.55 and mean > 195
+
+
+def to_lineart(cell):
+    """Leave existing line art alone; turn colour art into clean outlines."""
+    if is_lineart(cell):
+        return cell
+    g = cell.convert("L").filter(ImageFilter.CONTOUR)
+    # CONTOUR draws a frame round the edge - shave it off
+    g = g.crop((2, 2, g.width - 2, g.height - 2))
+    g = ImageOps.autocontrast(g, cutoff=1)
+    g = g.point(lambda v: 255 if v > 205 else int(v * 0.55))
+    return g.convert("RGB")
+
+
+def erase_cell_number(cell):
+    """Paint out the numeral in the top-left corner, but only if what is there
+    is small enough to be a numeral rather than part of the drawing."""
+    w, h = cell.size
+    cw, chh = int(w * 0.16), int(h * 0.15)
+    if cw < 4 or chh < 4:
+        return cell
+    corner = cell.crop((0, 0, cw, chh)).convert("L")
+    ink = sum(1 for v in corner.getdata() if v < 200) / float(cw * chh)
+    if ink < 0.30:                      # a numeral covers only a little of it
+        cell = cell.copy()
+        cell.paste((255, 255, 255), (0, 0, cw, chh))
+    return cell
+
+
+def slice_sheet(path, prefix, want=None):
     im = Image.open(path).convert("RGB")
-    xs, ys = find_grid(im)
+    xs, ys = find_grid(im, want)
     made = []
     n = 0
     for r in range(len(ys) - 1):
@@ -101,6 +161,7 @@ def slice_sheet(path, prefix):
             # trim the rule lines and the printed cell number
             cell = im.crop((int(x0 + cw * 0.09), int(y0 + ch * 0.085),
                             int(x1 - cw * 0.025), int(y1 - ch * 0.02)))
+            cell = erase_cell_number(cell)
             grey = cell.convert("L")
             box = grey.point(lambda v: 255 if v < 235 else 0).getbbox()
             if box:
@@ -112,6 +173,9 @@ def slice_sheet(path, prefix):
                 n -= 1
                 continue
             cell.thumbnail((MAX_SIDE, MAX_SIDE), Image.LANCZOS)
+            cell = to_lineart(cell)
+            # line art needs very few tones; a small palette shrinks the PNG ~70%
+            cell = cell.convert("L").quantize(colors=16, method=Image.MEDIANCUT)
             out = os.path.join(TRACES, "%s-%02d.png" % (prefix, n))
             if not DRY:
                 cell.save(out, "PNG", optimize=True)
@@ -125,7 +189,7 @@ def run(cmd, **kw):
 
 
 def main():
-    for d in (SHEETS, PRIVATE):
+    for d in (SHEETS, PRIVATE, HOLD):
         if not os.path.isdir(d):
             os.makedirs(d)
 
@@ -158,7 +222,9 @@ def main():
             print("unchanged, skipping: %s" % f)
             continue
         prefix = slug(f)
-        made = slice_sheet(p, prefix)
+        m = re.search(r"(\d+)", os.path.splitext(f)[0])
+        want = int(m.group(1)) if m and 2 <= int(m.group(1)) <= 200 else None
+        made = slice_sheet(p, prefix, want)
         print("cut %s into %d traces (%s-NN.png)" % (f, len(made), prefix))
         total_new += made
         state[f] = stamp
