@@ -1330,7 +1330,7 @@ function applyExtraTrace(entry){
     toast('Ready to colour!');
   };
   img.onerror = function(){ toast('Could not load that one'); };
-  img.src = 'traces/' + entry.file;
+  img.src = 'traces/' + encodeURIComponent(entry.file);
 }
 
 var TEMPLATES = [
@@ -2585,7 +2585,7 @@ function openTemplates(){
                 'they then appear here on every tablet, with nothing to copy across.</div>';
       }
       ex.forEach(function(e, i){
-        html += '<button data-extra="' + i + '"><img src="traces/' + e.file +
+        html += '<button data-extra="' + i + '"><img src="traces/' + encodeURIComponent(e.file) +
                 '" loading="lazy" style="width:100%;height:66px;object-fit:contain;background:#fff;' +
                 'border-radius:10px;display:block">' + e.name + '</button>';
       });
