@@ -98,9 +98,13 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-
 .canvaswrap{flex:1 1 auto;position:relative;min-width:0;background:#cfd8ee;
   display:flex;align-items:center;justify-content:center;overflow:hidden}
 .canvasstack{position:relative;line-height:0}
-canvas.board{display:block;background:#fff;touch-action:none;box-shadow:0 0 0 2px rgba(36,26,61,.12)}
-canvas.overlay{position:absolute;left:0;top:0;background:transparent;pointer-events:none}
-canvas.onion{position:absolute;left:0;top:0;background:transparent;pointer-events:none;opacity:.28}
+canvas.bg{position:absolute;left:0;top:0;z-index:0;background:#fff;pointer-events:none}
+canvas.board{display:block;position:relative;z-index:1;background:transparent;touch-action:none}
+canvas.onion{position:absolute;left:0;top:0;z-index:2;background:transparent;pointer-events:none;opacity:.28}
+canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;pointer-events:none}
+.canvasstack{box-shadow:0 0 0 2px rgba(36,26,61,.12)}
+#sceneBg{position:absolute;left:0;top:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.stk{z-index:1}
 
 /* ---------- trays ---------- */
 .tray{flex:0 0 auto;background:#fff;border-top:2px solid var(--line);
@@ -192,6 +196,8 @@ canvas.onion{position:absolute;left:0;top:0;background:transparent;pointer-event
 .gitem img{width:100%;height:112px;object-fit:cover;display:block;background:#fff}
 .gitem .tag{position:absolute;left:7px;top:7px;background:rgba(36,26,61,.8);color:#fff;font-size:11px;
   font-weight:800;padding:3px 8px;border-radius:9px}
+.gitem .when{position:absolute;right:7px;top:7px;background:rgba(255,255,255,.9);color:#5b5175;font-size:10px;
+  font-weight:800;padding:3px 7px;border-radius:9px}
 .gitem .grow{display:flex;gap:5px;padding:7px}
 .gitem .grow button{flex:1 1 0;height:42px;border-radius:13px;background:var(--sky);font-weight:800;font-size:13px}
 .gitem .grow button.del{flex:0 0 46px;background:#ffe1e6;color:#c02a4f}
@@ -209,7 +215,7 @@ canvas.onion{position:absolute;left:0;top:0;background:transparent;pointer-event
 .sheetrow{display:flex;gap:9px}
 .sheetrow button{flex:1 1 0;height:56px;border-radius:17px;font-weight:900;font-size:17px;background:var(--sky);border:2px solid var(--line)}
 .sheetrow button.go{background:var(--leaf);color:#fff;border-color:transparent}
-.optgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}
+.optgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px;margin-bottom:13px}
 .optgrid button{border-radius:18px;padding:14px 8px;background:var(--sky);border:3px solid transparent;font-weight:800}
 .optgrid button.sel{border-color:var(--grape);background:#efe9ff}
 .optgrid .oe{font-size:32px;display:block}
@@ -242,6 +248,7 @@ body.little .sw{width:58px;height:58px}
 body.little .sz{width:58px;height:58px}
 body.little .stray button{width:64px;height:64px;font-size:36px}
 body.little .chip{height:54px;font-size:15px}
+#galBar{background:#fff}
 
 @media (max-height:560px){
   .card{min-height:112px;padding:12px}
@@ -288,6 +295,7 @@ body.little .chip{height:54px;font-size:15px}
         <div class="rail" id="paintRail"></div>
         <div class="canvaswrap" id="paintWrap">
           <div class="canvasstack" id="paintStack">
+            <canvas class="bg" id="paintBg"></canvas>
             <canvas class="board" id="paintCanvas"></canvas>
             <canvas class="overlay" id="paintOverlay"></canvas>
           </div>
@@ -299,6 +307,7 @@ body.little .chip{height:54px;font-size:15px}
         <div class="sep"></div>
         <div class="swatches" id="paintColors"></div>
         <div class="sep"></div>
+        <button class="act" id="envBtn">&#127794; Scene</button>
         <button class="act" id="tplBtn">&#128196; Pages</button>
         <button class="act" id="undoBtn">&#8630; Undo</button>
         <button class="act warn" id="clearBtn">&#128465;</button>
@@ -312,6 +321,7 @@ body.little .chip{height:54px;font-size:15px}
         <div class="rail" id="animRail"></div>
         <div class="canvaswrap" id="animWrap">
           <div class="canvasstack" id="animStack">
+            <canvas class="bg" id="animBg"></canvas>
             <canvas class="board" id="animCanvas"></canvas>
             <canvas class="onion" id="animOnion"></canvas>
             <canvas class="overlay" id="animOverlay"></canvas>
@@ -323,6 +333,7 @@ body.little .chip{height:54px;font-size:15px}
         <div class="sep"></div>
         <div class="swatches" id="animColors"></div>
         <div class="sep"></div>
+        <button class="act" id="animEnvBtn">&#127794; Scene</button>
         <button class="act" id="animUndo">&#8630;</button>
         <button class="act warn" id="animClear">&#128465;</button>
       </div>
@@ -333,11 +344,12 @@ body.little .chip{height:54px;font-size:15px}
     <section class="screen" id="scene">
       <div class="work">
         <div class="rail" id="sceneRail"></div>
-        <div class="canvaswrap"><div id="sceneStage"></div></div>
+        <div class="canvaswrap"><div id="sceneStage"><canvas id="sceneBg"></canvas></div></div>
       </div>
       <div class="tray">
         <div class="stray" id="stickerTray"></div>
         <div class="sep"></div>
+        <button class="act" id="sceneEnvBtn">&#127794; Scene</button>
         <button class="act warn" id="clearScene">&#128465;</button>
         <button class="act go" id="saveScene">&#128190; Save</button>
       </div>
@@ -356,6 +368,7 @@ body.little .chip{height:54px;font-size:15px}
 
     <!-- GALLERY -->
     <section class="screen" id="gallery">
+      <div class="subbar" id="galBar"></div>
       <div id="galBody"><div class="ggrid" id="ggrid"></div></div>
     </section>
 
@@ -402,15 +415,26 @@ var S = {
   customColors: store.get('customColors', []),
   stickers: [], selectedSticker: null, sceneBg: '#bfe8ff',
   frames: [], frameIdx: 0, fps: 5, onion: true, playingAnim: false,
-  padCat: 'inst', padSound: 'bell'
+  padCat: 'inst', padSound: 'bell',
+  galFilter: 'all', galSort: 'new',
+  paintEnv: store.get('paintEnv','none'),
+  animEnv: store.get('animEnv','none'),
+  sceneEnv: store.get('sceneEnv','none')
 };
 
 var PALETTE_LITTLE = ['#ff4d8d','#f7941e','#ffd11a','#22b573','#1e9fe0','#6b3fd6','#8b5a2b','#241a3d'];
 var PALETTE_BIG = ['#ff4d8d','#ff7ab6','#e02020','#f7941e','#ffd11a','#c6e02a','#22b573','#0f7a52',
                    '#63d0ff','#1e9fe0','#1246a8','#6b3fd6','#b06bff','#8b5a2b','#d9a066','#9aa3b5',
                    '#241a3d','#ffffff'];
+var PALETTE_TEEN = ['#ff2d6f','#f72585','#e63946','#ff6b35','#ffd23f','#e9c46a','#06d6a0','#2a9d8f',
+                    '#4cc9f0','#118ab2','#3a0ca3','#7209b7','#b5179e','#560bad','#8d99ae','#495057',
+                    '#14121f','#f8f9fa'];
 function isLittle(){ return S.age === 'little'; }
-function palette(){ return (isLittle() ? PALETTE_LITTLE : PALETTE_BIG).concat(S.customColors); }
+function isTeen(){ return S.age === 'teen'; }
+function palette(){
+  var base = isLittle() ? PALETTE_LITTLE : (isTeen() ? PALETTE_TEEN : PALETTE_BIG);
+  return base.concat(S.customColors);
+}
 
 /* ---------- toast ---------- */
 var toastTimer = null;
@@ -483,7 +507,9 @@ function fitStack(wrapEl, stackEl, mainEl, others){
   });
 
   var g = mainEl.getContext('2d');
-  g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
+  g.save(); g.setTransform(1,0,0,1,0,0);
+  g.clearRect(0, 0, mainEl.width, mainEl.height);
+  g.restore();
   if(prev) g.drawImage(prev, 0, 0, w, h);
   g.lineCap = 'round'; g.lineJoin = 'round';
   return true;
@@ -521,10 +547,21 @@ function refreshUndoButtons(){
 function clearBoard(){
   var s = cssSize(DC);
   DX.save(); DX.setTransform(1,0,0,1,0,0);
-  DX.fillStyle = '#ffffff'; DX.fillRect(0,0,DC.width,DC.height);
+  DX.clearRect(0,0,DC.width,DC.height);
   DX.restore(); DX.setTransform(DPR,0,0,DPR,0,0);
   DX.lineCap='round'; DX.lineJoin='round';
   return s;
+}
+
+/* flatten a background + art pair into one opaque canvas for saving */
+function flatten(bgEl, artEl){
+  var c = document.createElement('canvas');
+  c.width = artEl.width; c.height = artEl.height;
+  var g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0,0,c.width,c.height);
+  if(bgEl && bgEl.width) g.drawImage(bgEl, 0, 0, c.width, c.height);
+  g.drawImage(artEl, 0, 0, c.width, c.height);
+  return c;
 }
 
 /* ---------- brush textures ---------- */
@@ -558,8 +595,11 @@ function strokeSeg(a, b){
 
   switch(S.tool){
     case 'eraser':
-      DX.strokeStyle = '#ffffff'; DX.lineWidth = w * 1.7;
-      line(a,b); break;
+      /* cut a hole in the art layer so the scene shows through */
+      DX.globalCompositeOperation = 'destination-out';
+      DX.strokeStyle = 'rgba(0,0,0,1)'; DX.lineWidth = w * 1.7;
+      line(a,b);
+      DX.globalCompositeOperation = 'source-over'; break;
 
     case 'rainbow':
       hue = (hue + 6) % 360;
@@ -983,6 +1023,48 @@ function tStar(g,cx,cy,r){
   }
   g.closePath(); g.stroke();
 }
+/* bezier chain: [x0,y0, c1x,c1y,c2x,c2y,x,y, ...] */
+function tCurve(g,p){
+  g.beginPath(); g.moveTo(p[0],p[1]);
+  for(var i=2;i+5<p.length;i+=6) g.bezierCurveTo(p[i],p[i+1],p[i+2],p[i+3],p[i+4],p[i+5]);
+  g.stroke();
+}
+
+/* Manga eye: upper and lower lid arcs meeting at the corners with a large
+   iris inside. Drawing a full ellipse plus a small circle instead reads as
+   a pair of spectacles, which is what this replaced. */
+function tAnimeEye(g,cx,cy,rx,ry){
+  var lw = g.lineWidth;
+  var iy = cy - ry*0.08;
+  /* almond opening */
+  g.beginPath();
+  g.moveTo(cx-rx, cy);
+  g.bezierCurveTo(cx-rx*0.62, cy-ry*1.40, cx+rx*0.62, cy-ry*1.40, cx+rx, cy);
+  g.bezierCurveTo(cx+rx*0.55, cy+ry*1.05, cx-rx*0.55, cy+ry*1.05, cx-rx, cy);
+  g.stroke();
+  /* iris outline, then a solid pupil with a highlight punched through */
+  tEll(g, cx, iy, rx*0.48, ry*0.76, 0);
+  g.fillStyle = g.strokeStyle;
+  g.beginPath(); g.arc(cx, iy, rx*0.19, 0, Math.PI*2); g.fill();
+  g.save();
+  g.fillStyle = '#ffffff';
+  g.beginPath(); g.arc(cx - rx*0.15, iy - ry*0.30, rx*0.13, 0, Math.PI*2); g.fill();
+  g.restore();
+  /* heavy upper lash line - this is what stops it reading as spectacles */
+  g.lineWidth = lw * 1.7;
+  g.beginPath();
+  g.moveTo(cx-rx, cy);
+  g.bezierCurveTo(cx-rx*0.62, cy-ry*1.40, cx+rx*0.62, cy-ry*1.40, cx+rx, cy);
+  g.stroke();
+  g.lineWidth = lw;
+}
+
+var TPL_CATS = [
+  { id:'easy',    name:'Easy',     emoji:'\uD83D\uDC23' },
+  { id:'anime',   name:'Anime',    emoji:'\u2728' },
+  { id:'cool',    name:'Cool',     emoji:'\uD83D\uDEF9' },
+  { id:'pattern', name:'Patterns', emoji:'\uD83C\uDF00' }
+];
 
 var TEMPLATES = [
   { id:'blank', name:'Blank', draw:function(){} },
@@ -1076,8 +1158,492 @@ var TEMPLATES = [
       tEll(g,-0.19,-0.2,0.13,0.16,0); tLine(g,-0.19,-0.04,-0.13,0.4);
       tEll(g,0.05,-0.29,0.13,0.16,0); tLine(g,0.05,-0.13,-0.05,0.4);
       tEll(g,0.26,-0.13,0.12,0.15,0); tLine(g,0.26,0.02,0.06,0.4);
+    }},
+
+  /* ---- anime: drawn in a generic style, not any existing character ---- */
+  { id:'animegirl', name:'Anime girl', cat:'anime', draw:function(g){
+      tCurve(g,[-0.17,-0.06, -0.17,0.10, -0.10,0.25, 0,0.30, 0.10,0.25, 0.17,0.10, 0.17,-0.06]);
+      tCurve(g,[-0.17,-0.06, -0.24,-0.36, -0.08,-0.46, 0,-0.46, 0.08,-0.46, 0.24,-0.36, 0.17,-0.06]);
+      /* side-swept fringe */
+      tCurve(g,[-0.17,-0.11, -0.13,-0.30, 0.00,-0.33, 0.05,-0.19]);
+      tCurve(g,[0.05,-0.19, 0.09,-0.29, 0.15,-0.27, 0.17,-0.11]);
+      tCurve(g,[-0.20,-0.16, -0.28,0.06, -0.26,0.26, -0.22,0.38]);
+      tCurve(g,[0.20,-0.16, 0.28,0.06, 0.26,0.26, 0.22,0.38]);
+      tAnimeEye(g,-0.085,0.045,0.066,0.072);
+      tAnimeEye(g,0.085,0.045,0.066,0.072);
+      tCurve(g,[-0.12,-0.06, -0.09,-0.09, -0.05,-0.09, -0.03,-0.06]);
+      tCurve(g,[0.12,-0.06, 0.09,-0.09, 0.05,-0.09, 0.03,-0.06]);
+      tLine(g,0,0.11,0.015,0.14);
+      tCurve(g,[-0.035,0.19, -0.015,0.22, 0.015,0.22, 0.035,0.19]);
+    }},
+  { id:'animeboy', name:'Anime boy', cat:'anime', draw:function(g){
+      tCurve(g,[-0.16,-0.06, -0.16,0.10, -0.09,0.24, 0,0.28, 0.09,0.24, 0.16,0.10, 0.16,-0.06]);
+      tPoly(g,[[-0.16,-0.06],[-0.22,-0.20],[-0.13,-0.17],[-0.15,-0.33],[-0.04,-0.22],
+               [0,-0.40],[0.05,-0.22],[0.15,-0.33],[0.13,-0.17],[0.22,-0.20],[0.16,-0.06]],false);
+      tAnimeEye(g,-0.085,0.035,0.064,0.060);
+      tAnimeEye(g,0.085,0.035,0.064,0.060);
+      tLine(g,-0.13,-0.05,-0.035,-0.03); tLine(g,0.13,-0.05,0.035,-0.03);
+      tLine(g,0,0.10,0.016,0.13);
+      tCurve(g,[-0.04,0.18, -0.015,0.21, 0.015,0.21, 0.04,0.18]);
+      /* neck and shoulders */
+      tLine(g,-0.05,0.27,-0.05,0.33); tLine(g,0.05,0.27,0.05,0.33);
+      tCurve(g,[-0.05,0.33, -0.20,0.36, -0.26,0.42, -0.27,0.48]);
+      tCurve(g,[0.05,0.33, 0.20,0.36, 0.26,0.42, 0.27,0.48]);
+    }},
+  { id:'chibi', name:'Chibi', cat:'anime', draw:function(g){
+      tCirc(g,0,-0.18,0.22);
+      tCurve(g,[-0.22,-0.18, -0.22,-0.38, -0.10,-0.44, 0,-0.44, 0.10,-0.44, 0.22,-0.38, 0.22,-0.18]);
+      tEll(g,-0.085,-0.14,0.045,0.06,0); tEll(g,0.085,-0.14,0.045,0.06,0);
+      tCirc(g,-0.085,-0.14,0.022); tCirc(g,0.085,-0.14,0.022);
+      tCirc(g,-0.16,-0.06,0.025); tCirc(g,0.16,-0.06,0.025);
+      tCurve(g,[-0.03,-0.04, -0.01,-0.01, 0.01,-0.01, 0.03,-0.04]);
+      tCurve(g,[-0.13,0.06, -0.16,0.20, -0.14,0.30, -0.12,0.34]);
+      tCurve(g,[0.13,0.06, 0.16,0.20, 0.14,0.30, 0.12,0.34]);
+      tLine(g,-0.12,0.34,0.12,0.34);
+      tCurve(g,[-0.13,0.10, -0.22,0.16, -0.24,0.24, -0.22,0.28]);
+      tCurve(g,[0.13,0.10, 0.22,0.16, 0.24,0.24, 0.22,0.28]);
+      tRect(g,-0.10,0.34,0.07,0.10); tRect(g,0.03,0.34,0.07,0.10);
+    }},
+  { id:'mangaeyes', name:'Manga eyes', cat:'anime', draw:function(g){
+      [-0.21,0.21].forEach(function(cx){
+        var out = cx < 0 ? -1 : 1;
+        tAnimeEye(g,cx,0.04,0.185,0.150);
+        /* three lashes flicking away from the nose */
+        tLine(g, cx+0.185*out, 0.02, cx+0.245*out, -0.05);
+        tLine(g, cx+0.150*out, -0.06, cx+0.200*out, -0.14);
+        tLine(g, cx+0.095*out, -0.09, cx+0.125*out, -0.17);
+      });
+    }},
+
+  /* ---- cool / older themes ---- */
+  { id:'skateboard', name:'Skateboard', cat:'cool', draw:function(g){
+      tCurve(g,[-0.42,0.02, -0.46,-0.10, -0.34,-0.12, -0.24,-0.12]);
+      tLine(g,-0.24,-0.12,0.24,-0.12);
+      tCurve(g,[0.24,-0.12, 0.34,-0.12, 0.46,-0.10, 0.42,0.02]);
+      tCurve(g,[0.42,0.02, 0.36,0.06, 0.30,0.04, 0.24,0.04]);
+      tLine(g,0.24,0.04,-0.24,0.04);
+      tCurve(g,[-0.24,0.04, -0.30,0.04, -0.36,0.06, -0.42,0.02]);
+      tLine(g,-0.22,0.04,-0.22,0.10); tLine(g,0.22,0.04,0.22,0.10);
+      tCirc(g,-0.26,0.14,0.055); tCirc(g,-0.14,0.14,0.055);
+      tCirc(g,0.14,0.14,0.055); tCirc(g,0.26,0.14,0.055);
+      tLine(g,-0.14,-0.12,-0.08,0.04); tLine(g,0.02,-0.12,0.08,0.04);
+    }},
+  { id:'guitar', name:'Guitar', cat:'cool', draw:function(g){
+      /* double-cutaway body */
+      tCurve(g,[-0.20,0.04, -0.32,0.08, -0.34,0.26, -0.20,0.36]);
+      tCurve(g,[-0.20,0.36, -0.08,0.45, 0.08,0.45, 0.20,0.36]);
+      tCurve(g,[0.20,0.36, 0.34,0.26, 0.32,0.08, 0.20,0.04]);
+      tCurve(g,[0.20,0.04, 0.12,0.00, 0.07,0.07, 0.00,0.07]);
+      tCurve(g,[0.00,0.07, -0.07,0.07, -0.12,0.00, -0.20,0.04]);
+      /* neck, headstock, tuners */
+      tRect(g,-0.028,-0.34,0.056,0.41);
+      tPoly(g,[[-0.058,-0.34],[-0.05,-0.47],[0.05,-0.47],[0.058,-0.34]]);
+      tCirc(g,-0.088,-0.44,0.015); tCirc(g,-0.088,-0.40,0.015); tCirc(g,-0.088,-0.36,0.015);
+      tCirc(g,0.088,-0.44,0.015); tCirc(g,0.088,-0.40,0.015); tCirc(g,0.088,-0.36,0.015);
+      /* frets */
+      tLine(g,-0.028,-0.25,0.028,-0.25); tLine(g,-0.028,-0.16,0.028,-0.16);
+      tLine(g,-0.028,-0.07,0.028,-0.07); tLine(g,-0.028,0.01,0.028,0.01);
+      /* pickups and controls */
+      tRect(g,-0.085,0.13,0.17,0.042); tRect(g,-0.085,0.21,0.17,0.042);
+      tCirc(g,0.17,0.30,0.026); tCirc(g,0.24,0.23,0.026);
+    }},
+  { id:'sneaker', name:'Sneaker', cat:'cool', draw:function(g){
+      /* sole */
+      tCurve(g,[-0.40,0.17, -0.45,0.23, -0.43,0.30, -0.34,0.31]);
+      tLine(g,-0.34,0.31,0.32,0.31);
+      tCurve(g,[0.32,0.31, 0.41,0.31, 0.43,0.26, 0.40,0.19]);
+      tLine(g,-0.40,0.17,0.40,0.19);
+      /* toe box and upper */
+      tCurve(g,[-0.40,0.17, -0.41,0.03, -0.31,-0.07, -0.18,-0.09]);
+      tCurve(g,[-0.18,-0.09, -0.09,-0.10, -0.05,-0.01, 0.01,0.05]);
+      tCurve(g,[0.01,0.05, 0.12,0.11, 0.27,0.14, 0.40,0.19]);
+      /* tongue */
+      tCurve(g,[-0.18,-0.09, -0.24,-0.03, -0.22,0.04, -0.17,0.09]);
+      /* laces */
+      tLine(g,-0.31,0.02,-0.17,0.09); tLine(g,-0.32,0.08,-0.14,0.14);
+      tLine(g,-0.31,0.14,-0.10,0.19);
+      /* side stripe and heel tab */
+      tCurve(g,[-0.05,0.27, 0.05,0.16, 0.18,0.12, 0.31,0.16]);
+      tCurve(g,[0.34,0.15, 0.40,0.11, 0.43,0.15, 0.40,0.19]);
+    }},
+  { id:'headphones', name:'Headphones', cat:'cool', draw:function(g){
+      tCurve(g,[-0.30,0.06, -0.32,-0.30, 0.32,-0.30, 0.30,0.06]);
+      tCurve(g,[-0.22,0.04, -0.24,-0.22, 0.24,-0.22, 0.22,0.04]);
+      tRect(g,-0.38,0.04,0.16,0.26); tRect(g,0.22,0.04,0.16,0.26);
+      tEll(g,-0.30,0.17,0.05,0.09,0); tEll(g,0.30,0.17,0.05,0.09,0);
+      tCurve(g,[0.30,0.30, 0.34,0.40, 0.24,0.44, 0.20,0.48]);
+    }},
+  { id:'dragon', name:'Dragon', cat:'cool', draw:function(g){
+      /* skull, brow ridge and snout, facing right */
+      tCurve(g,[-0.34,0.12, -0.34,-0.10, -0.18,-0.22, 0.00,-0.20]);
+      tCurve(g,[0.00,-0.20, 0.18,-0.18, 0.30,-0.08, 0.38,0.00]);
+      tCurve(g,[0.38,0.00, 0.43,0.05, 0.41,0.12, 0.34,0.12]);
+      /* jaw */
+      tCurve(g,[0.34,0.12, 0.18,0.15, 0.04,0.17, -0.06,0.21]);
+      tCurve(g,[-0.06,0.21, -0.20,0.24, -0.32,0.22, -0.34,0.12]);
+      /* swept-back horns */
+      tCurve(g,[-0.14,-0.20, -0.22,-0.34, -0.36,-0.38, -0.45,-0.31]);
+      tCurve(g,[0.01,-0.20, -0.04,-0.33, -0.16,-0.41, -0.28,-0.39]);
+      /* brow, eye, nostril */
+      tCurve(g,[-0.05,-0.13, 0.02,-0.17, 0.09,-0.15, 0.12,-0.10]);
+      tEll(g,0.02,-0.05,0.052,0.033,-0.25); tCirc(g,0.02,-0.05,0.017);
+      tCirc(g,0.34,0.04,0.015);
+      /* teeth */
+      tPoly(g,[[0.22,0.14],[0.25,0.22],[0.29,0.13]],false);
+      tPoly(g,[[0.10,0.16],[0.13,0.25],[0.17,0.15]],false);
+      /* neck spikes */
+      tPoly(g,[[-0.24,0.23],[-0.32,0.34],[-0.16,0.29]],false);
+      tPoly(g,[[-0.08,0.21],[-0.14,0.36],[0.00,0.27]],false);
+    }},
+  { id:'sportscar', name:'Sports car', cat:'cool', draw:function(g){
+      tCurve(g,[-0.44,0.10, -0.44,0.02, -0.36,-0.02, -0.28,-0.04]);
+      tCurve(g,[-0.28,-0.04, -0.18,-0.18, 0.02,-0.20, 0.14,-0.14]);
+      tCurve(g,[0.14,-0.14, 0.28,-0.08, 0.40,-0.04, 0.44,0.04]);
+      tLine(g,0.44,0.04,0.44,0.12); tLine(g,-0.44,0.10,-0.44,0.12);
+      tLine(g,-0.44,0.12,0.44,0.12);
+      tCurve(g,[-0.22,-0.05, -0.14,-0.15, 0.00,-0.16, 0.08,-0.12]);
+      tLine(g,-0.02,-0.16,-0.02,-0.05);
+      tCirc(g,-0.26,0.12,0.10); tCirc(g,0.26,0.12,0.10);
+      tCirc(g,-0.26,0.12,0.045); tCirc(g,0.26,0.12,0.045);
+      tLine(g,-0.44,0.04,-0.34,0.04); tRect(g,0.34,0.00,0.08,0.04);
+    }},
+  { id:'skull', name:'Skull', cat:'cool', draw:function(g){
+      tCurve(g,[-0.24,0.06, -0.26,-0.20, -0.12,-0.34, 0,-0.34]);
+      tCurve(g,[0,-0.34, 0.12,-0.34, 0.26,-0.20, 0.24,0.06]);
+      tCurve(g,[0.24,0.06, 0.22,0.14, 0.16,0.16, 0.12,0.16]);
+      tCurve(g,[-0.24,0.06, -0.22,0.14, -0.16,0.16, -0.12,0.16]);
+      tLine(g,0.12,0.16,0.12,0.26); tLine(g,-0.12,0.16,-0.12,0.26);
+      tLine(g,-0.12,0.26,0.12,0.26);
+      tEll(g,-0.10,-0.10,0.065,0.075,0); tEll(g,0.10,-0.10,0.065,0.075,0);
+      tPoly(g,[[0,0.00],[-0.035,0.08],[0.035,0.08]]);
+      tLine(g,-0.10,0.16,-0.10,0.26); tLine(g,-0.035,0.16,-0.035,0.26);
+      tLine(g,0.035,0.16,0.035,0.26);
+    }},
+
+  /* ---- patterns ---- */
+  { id:'mandala', name:'Mandala', cat:'pattern', draw:function(g){
+      tCirc(g,0,0,0.06); tCirc(g,0,0,0.12); tCirc(g,0,0,0.30); tCirc(g,0,0,0.42);
+      for(var i=0;i<12;i++){
+        var a=(Math.PI/6)*i;
+        tEll(g,Math.cos(a)*0.21,Math.sin(a)*0.21,0.05,0.085,a+Math.PI/2);
+        tLine(g,Math.cos(a)*0.30,Math.sin(a)*0.30,Math.cos(a)*0.42,Math.sin(a)*0.42);
+      }
+      for(var j=0;j<24;j++){
+        var b=(Math.PI/12)*j;
+        tCirc(g,Math.cos(b)*0.36,Math.sin(b)*0.36,0.022);
+      }
+    }},
+  { id:'rose', name:'Rose', cat:'pattern', draw:function(g){
+      /* open spiral centre */
+      tCirc(g,0,-0.15,0.035);
+      tCurve(g,[0.045,-0.15, 0.045,-0.22, -0.05,-0.23, -0.075,-0.15]);
+      tCurve(g,[-0.075,-0.15, -0.085,-0.06, 0.03,-0.04, 0.09,-0.10]);
+      /* five outer petals */
+      for(var i=0;i<5;i++){
+        var a=(Math.PI*2/5)*i - Math.PI/2;
+        tEll(g, Math.cos(a)*0.155, Math.sin(a)*0.155-0.15, 0.115, 0.085, a+Math.PI/2);
+      }
+      /* stem and leaves */
+      tCurve(g,[0,0.00, 0.03,0.16, -0.02,0.30, 0.01,0.45]);
+      tEll(g,-0.13,0.19,0.105,0.05,-0.45);
+      tEll(g,0.13,0.32,0.105,0.05,0.45);
+    }},
+  { id:'galaxy', name:'Galaxy', cat:'pattern', draw:function(g){
+      tCirc(g,-0.06,-0.04,0.16);
+      tEll(g,-0.06,-0.04,0.34,0.10,-0.35);
+      tEll(g,-0.06,-0.04,0.28,0.075,-0.35);
+      tCirc(g,0.26,0.24,0.07);
+      tCirc(g,0.22,0.22,0.02); tCirc(g,0.30,0.27,0.015);
+      tStar(g,-0.34,-0.30,0.06); tStar(g,0.30,-0.32,0.045);
+      tStar(g,-0.36,0.26,0.035); tStar(g,0.08,-0.40,0.03);
+      tCirc(g,-0.20,-0.38,0.012); tCirc(g,0.40,0.02,0.012);
     }}
 ];
+
+/* ============================================================
+   ENVIRONMENTS
+   Full-bleed scenes painted on the background layer, underneath
+   whatever the child draws. All drawn in code - no image files.
+   ============================================================ */
+var ENV_CATS = [
+  { id:'nature', name:'Nature',       emoji:'\uD83C\uDF32' },
+  { id:'sky',    name:'Sky & space',  emoji:'\uD83C\uDF0C' },
+  { id:'places', name:'Places',       emoji:'\uD83C\uDFD9\uFE0F' }
+];
+
+function eGrad(g,w,h,stops){
+  var gr = g.createLinearGradient(0,0,0,h);
+  for(var i=0;i<stops.length;i++) gr.addColorStop(stops[i][0], stops[i][1]);
+  g.fillStyle = gr; g.fillRect(0,0,w,h);
+}
+function eHill(g,w,h,y,amp,phase,color){
+  g.fillStyle = color; g.beginPath(); g.moveTo(0,h); g.lineTo(0,y);
+  for(var x=0;x<=w;x+=Math.max(4,w/40)) g.lineTo(x, y + Math.sin(x/w*Math.PI*2 + phase)*amp);
+  g.lineTo(w,h); g.closePath(); g.fill();
+}
+function eDisc(g,x,y,r,color){ g.fillStyle=color; g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill(); }
+function eCloud(g,x,y,r,color){
+  g.fillStyle = color;
+  [[0,0,1],[-r*0.8,r*0.15,0.7],[r*0.8,r*0.15,0.72],[-r*0.35,-r*0.35,0.66],[r*0.4,-r*0.3,0.6]]
+    .forEach(function(c){ g.beginPath(); g.arc(x+c[0]*1.0, y+c[1], r*c[2], 0, Math.PI*2); g.fill(); });
+}
+function eTri(g,x,y,bw,bh,color){
+  g.fillStyle=color; g.beginPath(); g.moveTo(x,y-bh); g.lineTo(x+bw/2,y); g.lineTo(x-bw/2,y);
+  g.closePath(); g.fill();
+}
+function eStars(g,w,h,n,color,maxR){
+  g.fillStyle = color;
+  for(var i=0;i<n;i++){
+    /* deterministic scatter so the sky does not reshuffle on resize */
+    var x=((i*7919)%1000)/1000*w, y=((i*104729)%1000)/1000*h*0.8;
+    var r=((i*31)%10)/10*(maxR||1.6)+0.6;
+    g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill();
+  }
+}
+function ePine(g,x,base,ht,wd,c1,c2){
+  g.fillStyle=c2; g.fillRect(x-wd*0.09, base-ht*0.16, wd*0.18, ht*0.2);
+  g.fillStyle=c1;
+  [0,1,2].forEach(function(k){
+    var top = base - ht*(0.94 - k*0.22), y = base - ht*(0.42 - k*0.22);
+    g.beginPath(); g.moveTo(x, top);
+    g.lineTo(x + wd*(0.32 + k*0.11), y); g.lineTo(x - wd*(0.32 + k*0.11), y);
+    g.closePath(); g.fill();
+  });
+}
+
+var ENVIRONMENTS = [
+  { id:'none', name:'Plain', cat:'nature', draw:function(g,w,h){
+      g.fillStyle='#ffffff'; g.fillRect(0,0,w,h);
+    }},
+  { id:'meadow', name:'Meadow', cat:'nature', draw:function(g,w,h){
+      eGrad(g,w,h,[[0,'#8fd4ff'],[0.55,'#cfeeff'],[0.56,'#8fd96b'],[1,'#4da543']]);
+      eDisc(g,w*0.82,h*0.16,Math.min(w,h)*0.09,'#ffe066');
+      eCloud(g,w*0.2,h*0.16,Math.min(w,h)*0.06,'rgba(255,255,255,.95)');
+      eCloud(g,w*0.55,h*0.1,Math.min(w,h)*0.045,'rgba(255,255,255,.85)');
+      eHill(g,w,h,h*0.60,h*0.045,0,'#63bf52');
+      eHill(g,w,h,h*0.74,h*0.03,2.2,'#4da543');
+      for(var i=0;i<14;i++){
+        var x=((i*7919)%1000)/1000*w, y=h*(0.80+((i*37)%20)/100);
+        eDisc(g,x,y,Math.min(w,h)*0.012,['#fff','#ffe066','#ff8fb1'][i%3]);
+      }
+    }},
+  { id:'forest', name:'Forest', cat:'nature', draw:function(g,w,h){
+      eGrad(g,w,h,[[0,'#bfe3c0'],[0.5,'#8ec894'],[1,'#4a7c52']]);
+      for(var i=0;i<7;i++){
+        var x=w*(0.06+i*0.15), sc=0.8+((i*13)%5)/10;
+        ePine(g,x,h*0.92,h*0.62*sc,w*0.16*sc,'#2f6b3f','#5a3d26');
+      }
+      g.fillStyle='#3f6b46'; g.fillRect(0,h*0.9,w,h*0.1);
+    }},
+  { id:'mountains', name:'Mountains', cat:'nature', draw:function(g,w,h){
+      eGrad(g,w,h,[[0,'#7ec8f0'],[0.6,'#d6eefb'],[0.61,'#a8d8a0'],[1,'#6fae63']]);
+      eTri(g,w*0.28,h*0.66,w*0.52,h*0.44,'#8a93a8');
+      eTri(g,w*0.68,h*0.66,w*0.46,h*0.36,'#a0a8bb');
+      eTri(g,w*0.28,h*0.66-h*0.30,w*0.16,h*0.14,'#ffffff');
+      eTri(g,w*0.68,h*0.66-h*0.24,w*0.14,h*0.12,'#ffffff');
+      eDisc(g,w*0.14,h*0.14,Math.min(w,h)*0.07,'#fff3b0');
+      g.fillStyle='#6fae63'; g.fillRect(0,h*0.66,w,h*0.34);
+    }},
+  { id:'beach', name:'Beach', cat:'nature', draw:function(g,w,h){
+      eGrad(g,w,h,[[0,'#5cc3f5'],[0.45,'#bfeaff'],[0.46,'#1f9bd6'],[0.68,'#3fc0e8'],[0.69,'#f2dfa8'],[1,'#e0c383']]);
+      eDisc(g,w*0.78,h*0.15,Math.min(w,h)*0.085,'#fff0a8');
+      g.strokeStyle='rgba(255,255,255,.75)'; g.lineWidth=Math.max(2,h*0.006);
+      for(var i=0;i<4;i++){
+        var y=h*(0.50+i*0.045);
+        g.beginPath(); g.moveTo(0,y);
+        for(var x=0;x<=w;x+=w/26) g.lineTo(x, y + Math.sin(x/w*Math.PI*5 + i)*h*0.012);
+        g.stroke();
+      }
+      eDisc(g,w*0.12,h*0.86,Math.min(w,h)*0.035,'#ff8fb1');
+    }},
+  { id:'underwater', name:'Under the sea', cat:'nature', draw:function(g,w,h){
+      eGrad(g,w,h,[[0,'#3fc7f0'],[0.6,'#0f6ea8'],[1,'#07456b']]);
+      g.fillStyle='#d9c48a'; g.beginPath(); g.moveTo(0,h);
+      g.lineTo(0,h*0.88);
+      for(var x=0;x<=w;x+=w/18) g.lineTo(x, h*0.88 + Math.sin(x/w*Math.PI*3)*h*0.025);
+      g.lineTo(w,h); g.closePath(); g.fill();
+      g.strokeStyle='#2fa85f'; g.lineWidth=Math.max(3,w*0.012); g.lineCap='round';
+      for(var k=0;k<6;k++){
+        var bx=w*(0.06+k*0.18);
+        g.beginPath(); g.moveTo(bx,h*0.9);
+        for(var y=h*0.9;y>h*0.52;y-=h*0.06) g.lineTo(bx+Math.sin(y/h*14+k)*w*0.02, y);
+        g.stroke();
+      }
+      g.fillStyle='rgba(255,255,255,.32)';
+      for(var b=0;b<18;b++){
+        var x2=((b*7919)%1000)/1000*w, y2=((b*104729)%1000)/1000*h*0.8;
+        g.beginPath(); g.arc(x2,y2,((b*29)%8)/8*w*0.012+2,0,Math.PI*2); g.fill();
+      }
+    }},
+  { id:'desert', name:'Desert', cat:'nature', draw:function(g,w,h){
+      eGrad(g,w,h,[[0,'#ffb765'],[0.45,'#ffdca8'],[0.46,'#e8c17a'],[1,'#c9974f']]);
+      eDisc(g,w*0.5,h*0.30,Math.min(w,h)*0.11,'#fff0c0');
+      eHill(g,w,h,h*0.62,h*0.05,0.6,'#dfae6b');
+      eHill(g,w,h,h*0.78,h*0.035,2.4,'#c9974f');
+      g.fillStyle='#3f9455';
+      var cx=w*0.2, cb=h*0.82;
+      g.fillRect(cx-w*0.018,cb-h*0.26,w*0.036,h*0.26);
+      g.fillRect(cx-w*0.075,cb-h*0.17,w*0.028,h*0.09);
+      g.fillRect(cx-w*0.075,cb-h*0.17,w*0.075,w*0.028);
+      g.fillRect(cx+w*0.047,cb-h*0.22,w*0.028,h*0.12);
+      g.fillRect(cx+w*0.019,cb-h*0.22,w*0.056,w*0.028);
+    }},
+  { id:'snow', name:'Snowy day', cat:'nature', draw:function(g,w,h){
+      eGrad(g,w,h,[[0,'#c9e4f5'],[0.55,'#eef7ff'],[0.56,'#ffffff'],[1,'#dbe9f5']]);
+      for(var i=0;i<5;i++) ePine(g,w*(0.1+i*0.2),h*0.86,h*0.5,w*0.13,'#2e6b4f','#5a3d26');
+      eHill(g,w,h,h*0.80,h*0.03,1.2,'#ffffff');
+      g.fillStyle='rgba(255,255,255,.9)';
+      for(var k=0;k<40;k++){
+        var x=((k*7919)%1000)/1000*w, y=((k*104729)%1000)/1000*h;
+        g.beginPath(); g.arc(x,y,((k*17)%6)/6*w*0.006+1.5,0,Math.PI*2); g.fill();
+      }
+    }},
+  { id:'jungle', name:'Jungle', cat:'nature', draw:function(g,w,h){
+      eGrad(g,w,h,[[0,'#7fd08a'],[0.5,'#2f8f52'],[1,'#14512f']]);
+      g.fillStyle='rgba(20,90,50,.55)';
+      for(var i=0;i<9;i++){
+        var x=w*(0.02+i*0.12), y=h*(0.02+((i*23)%30)/100);
+        g.save(); g.translate(x,y); g.rotate(((i*13)%10)/10-0.5);
+        g.beginPath(); g.ellipse ? g.ellipse(0,0,w*0.09,h*0.13,0,0,Math.PI*2) : g.arc(0,0,w*0.09,0,Math.PI*2);
+        g.fill(); g.restore();
+      }
+      g.strokeStyle='rgba(15,70,40,.6)'; g.lineWidth=Math.max(3,w*0.008);
+      for(var v=0;v<5;v++){
+        var vx=w*(0.12+v*0.2);
+        g.beginPath(); g.moveTo(vx,0);
+        for(var y2=0;y2<h*0.7;y2+=h*0.08) g.lineTo(vx+Math.sin(y2/h*10+v)*w*0.025,y2);
+        g.stroke();
+      }
+    }},
+  { id:'sunset', name:'Sunset', cat:'sky', draw:function(g,w,h){
+      eGrad(g,w,h,[[0,'#3b2a6b'],[0.35,'#e8557d'],[0.6,'#ffa764'],[0.75,'#ffd98a'],[1,'#5b3f7a']]);
+      eDisc(g,w*0.5,h*0.62,Math.min(w,h)*0.16,'#fff0b8');
+      eHill(g,w,h,h*0.72,h*0.04,0.4,'#3a2857');
+      eHill(g,w,h,h*0.84,h*0.03,2.0,'#241a3d');
+    }},
+  { id:'night', name:'Night sky', cat:'sky', draw:function(g,w,h){
+      eGrad(g,w,h,[[0,'#0b1030'],[0.6,'#22265e'],[1,'#3c3f7a']]);
+      eStars(g,w,h,70,'rgba(255,255,255,.9)',1.8);
+      eDisc(g,w*0.78,h*0.2,Math.min(w,h)*0.09,'#fdf6d0');
+      eDisc(g,w*0.74,h*0.17,Math.min(w,h)*0.075,'#22265e');
+      eHill(g,w,h,h*0.84,h*0.03,1.0,'#131736');
+    }},
+  { id:'space', name:'Outer space', cat:'sky', draw:function(g,w,h){
+      g.fillStyle='#07061a'; g.fillRect(0,0,w,h);
+      eStars(g,w,h*1.2,110,'rgba(255,255,255,.92)',2.0);
+      var gr=g.createRadialGradient(w*0.3,h*0.35,0,w*0.3,h*0.35,Math.min(w,h)*0.6);
+      gr.addColorStop(0,'rgba(120,60,200,.42)'); gr.addColorStop(1,'rgba(120,60,200,0)');
+      g.fillStyle=gr; g.fillRect(0,0,w,h);
+      eDisc(g,w*0.76,h*0.72,Math.min(w,h)*0.14,'#e0714f');
+      eDisc(g,w*0.72,h*0.68,Math.min(w,h)*0.04,'#c25a3c');
+      g.save(); g.translate(w*0.76,h*0.72); g.rotate(-0.4);
+      g.strokeStyle='rgba(255,220,180,.75)'; g.lineWidth=Math.max(3,h*0.012);
+      g.beginPath();
+      if(g.ellipse) g.ellipse(0,0,Math.min(w,h)*0.26,Math.min(w,h)*0.07,0,0,Math.PI*2);
+      g.stroke(); g.restore();
+      eDisc(g,w*0.18,h*0.8,Math.min(w,h)*0.05,'#9fb3d9');
+    }},
+  { id:'rainbow', name:'Rainbow sky', cat:'sky', draw:function(g,w,h){
+      eGrad(g,w,h,[[0,'#bfe6ff'],[0.7,'#e8f7ff'],[0.71,'#a9e08a'],[1,'#6fbf55']]);
+      var cols=['#ff5b7f','#ff9f43','#ffd93d','#5bd97e','#4bc0e8','#8b5bd9'];
+      g.lineWidth=Math.max(6,h*0.03);
+      for(var i=0;i<cols.length;i++){
+        g.strokeStyle=cols[i]; g.beginPath();
+        g.arc(w*0.5,h*0.72,Math.min(w,h)*(0.52-i*0.05),Math.PI,Math.PI*2);
+        g.stroke();
+      }
+      eCloud(g,w*0.14,h*0.66,Math.min(w,h)*0.075,'#ffffff');
+      eCloud(g,w*0.86,h*0.66,Math.min(w,h)*0.075,'#ffffff');
+    }},
+  { id:'city', name:'City', cat:'places', draw:function(g,w,h){
+      eGrad(g,w,h,[[0,'#2b3a70'],[0.5,'#6f7fc0'],[0.8,'#f0a878'],[1,'#ffd0a0']]);
+      eDisc(g,w*0.2,h*0.24,Math.min(w,h)*0.06,'#fff2c8');
+      var seed=[0.62,0.48,0.72,0.4,0.66,0.55,0.78,0.44,0.6,0.5];
+      for(var i=0;i<10;i++){
+        var bw=w/10, x=i*bw, bh=h*seed[i];
+        g.fillStyle = i%2 ? '#2a2c4d' : '#363a63';
+        g.fillRect(x,h-bh,bw*0.92,bh);
+        g.fillStyle='rgba(255,220,140,.85)';
+        for(var r=0;r<Math.floor(bh/(h*0.07));r++)
+          for(var c=0;c<3;c++)
+            if((i+r+c)%3!==0) g.fillRect(x+bw*(0.12+c*0.28), h-bh+h*0.03+r*h*0.07, bw*0.16, h*0.032);
+      }
+      g.fillStyle='#1b1c33'; g.fillRect(0,h*0.95,w,h*0.05);
+    }},
+  { id:'bedroom', name:'Bedroom', cat:'places', draw:function(g,w,h){
+      g.fillStyle='#f2e2f5'; g.fillRect(0,0,w,h*0.74);
+      g.fillStyle='#c98f5a'; g.fillRect(0,h*0.74,w,h*0.26);
+      g.strokeStyle='rgba(255,255,255,.5)'; g.lineWidth=2;
+      for(var i=1;i<8;i++){ g.beginPath(); g.moveTo(w*i/8,h*0.74); g.lineTo(w*i/8-w*0.04,h); g.stroke(); }
+      g.fillStyle='#7ec8f0'; g.fillRect(w*0.56,h*0.14,w*0.3,h*0.34);
+      g.fillStyle='#ffffff'; g.fillRect(w*0.56,h*0.14,w*0.3,h*0.34);
+      g.fillStyle='#9fd8f5'; g.fillRect(w*0.575,h*0.155,w*0.27,h*0.31);
+      eDisc(g,w*0.79,h*0.22,Math.min(w,h)*0.035,'#fff0a8');
+      g.fillStyle='#fff'; g.fillRect(w*0.705,h*0.155,w*0.012,h*0.31);
+      g.fillRect(w*0.575,h*0.30,w*0.27,h*0.014);
+      g.fillStyle='#e8607f'; g.fillRect(w*0.06,h*0.44,w*0.34,h*0.30);
+      g.fillStyle='#fff'; g.fillRect(w*0.08,h*0.46,w*0.13,h*0.10);
+      g.fillStyle='#b0446a'; g.fillRect(w*0.06,h*0.40,w*0.34,h*0.05);
+      g.fillStyle='rgba(180,120,200,.5)';
+      g.beginPath(); g.ellipse ? g.ellipse(w*0.5,h*0.9,w*0.28,h*0.06,0,0,Math.PI*2) : g.arc(w*0.5,h*0.9,w*0.2,0,Math.PI*2);
+      g.fill();
+    }},
+  { id:'stage', name:'On stage', cat:'places', draw:function(g,w,h){
+      g.fillStyle='#160f2e'; g.fillRect(0,0,w,h);
+      [[0.25,'#ffd86b'],[0.5,'#7ee8ff'],[0.75,'#ff8fd0']].forEach(function(sp){
+        /* a soft cone of light from each lamp down to the stage floor */
+        g.fillStyle='rgba(255,255,255,.09)';
+        g.beginPath(); g.moveTo(w*sp[0],0);
+        g.lineTo(w*sp[0]-w*0.16,h*0.86); g.lineTo(w*sp[0]+w*0.16,h*0.86);
+        g.closePath(); g.fill();
+        eDisc(g,w*sp[0],h*0.02,Math.min(w,h)*0.035,sp[1]);
+      });
+      g.fillStyle='#7a1230'; g.fillRect(0,0,w*0.1,h*0.86);
+      g.fillStyle='#7a1230'; g.fillRect(w*0.9,0,w*0.1,h*0.86);
+      g.fillStyle='#4a2a12'; g.fillRect(0,h*0.86,w,h*0.14);
+      g.strokeStyle='rgba(0,0,0,.35)'; g.lineWidth=2;
+      for(var i=1;i<12;i++){ g.beginPath(); g.moveTo(w*i/12,h*0.86); g.lineTo(w*i/12,h); g.stroke(); }
+    }}
+];
+
+function envById(id){
+  for(var i=0;i<ENVIRONMENTS.length;i++) if(ENVIRONMENTS[i].id === id) return ENVIRONMENTS[i];
+  return ENVIRONMENTS[0];
+}
+
+/* paint an environment onto a background canvas at its full pixel size */
+function renderEnv(canvasEl, envId){
+  if(!canvasEl || !canvasEl.width) return;
+  var g = canvasEl.getContext('2d');
+  g.save(); g.setTransform(1,0,0,1,0,0);
+  g.clearRect(0,0,canvasEl.width,canvasEl.height);
+  envById(envId).draw(g, canvasEl.width, canvasEl.height);
+  g.restore();
+}
+
+function openEnvPicker(current, onPick){
+  var cat = ENV_CATS.filter(function(c){ return c.id === envById(current).cat; })[0];
+  var sel = cat ? cat.id : 'nature';
+  function render(){
+    var html = '<h2>Pick a scene</h2><p>The scene sits behind your drawing. Swap it any time - your art stays put.</p><div class="pickgrid">';
+    ENV_CATS.forEach(function(c){
+      html += '<button data-ecat="' + c.id + '" class="' + (sel===c.id?'sel':'') + '">' +
+              '<span class="pe">' + c.emoji + '</span>' + c.name + '</button>';
+    });
+    html += '</div><div class="tplgrid">';
+    ENVIRONMENTS.filter(function(e){ return e.id==='none' || e.cat===sel; }).forEach(function(e){
+      html += '<button data-env="' + e.id + '"><canvas width="150" height="100" data-eprev="' + e.id + '"></canvas>' + e.name + '</button>';
+    });
+    html += '</div><div class="sheetrow"><button id="envNo">Cancel</button></div>';
+    showModal(html);
+    var prevs = $('sheet').querySelectorAll('canvas[data-eprev]');
+    for(var i=0;i<prevs.length;i++) renderEnv(prevs[i], prevs[i].getAttribute('data-eprev'));
+    bindAll('[data-ecat]', function(b){ sel = b.getAttribute('data-ecat'); render(); });
+    bindAll('[data-env]', function(b){ closeModal(); onPick(b.getAttribute('data-env')); });
+    $('envNo').onclick = closeModal;
+  }
+  render();
+}
 
 var PAPERS = [
   { id:'plain', name:'Plain', draw:function(){} },
@@ -1096,10 +1662,11 @@ var PAPERS = [
     }}
 ];
 
-function renderTemplate(g, w, h, tplId, paperId){
+function renderTemplate(g, w, h, tplId, paperId, opaque){
   g.save();
   g.setTransform(1,0,0,1,0,0);
-  g.fillStyle = '#ffffff'; g.fillRect(0,0,w,h);
+  if(opaque){ g.fillStyle = '#ffffff'; g.fillRect(0,0,w,h); }
+  else g.clearRect(0,0,w,h);
   var paper = PAPERS.filter(function(p){ return p.id === paperId; })[0];
   if(paper) paper.draw(g, w, h);
   var tpl = TEMPLATES.filter(function(t){ return t.id === tplId; })[0];
@@ -1115,50 +1682,59 @@ function renderTemplate(g, w, h, tplId, paperId){
 }
 
 function openTemplates(){
-  var html = '<h2>Colouring pages</h2><p>Pick a picture to colour in. Choose paper first if you want lines or squares.</p>' +
-             '<div class="pickgrid" id="paperRow">';
-  PAPERS.forEach(function(p, i){
-    html += '<button data-paper="' + p.id + '" class="' + (i===0?'sel':'') + '">' + p.name + '</button>';
-  });
-  html += '</div><div class="tplgrid">';
-  TEMPLATES.forEach(function(t){
-    html += '<button data-tpl="' + t.id + '"><canvas width="150" height="100" data-prev="' + t.id + '"></canvas>' + t.name + '</button>';
-  });
-  html += '</div><div class="sheetrow"><button id="tplNo">Cancel</button></div>';
-  showModal(html);
+  var cat = S.tplCat || (isTeen() ? 'anime' : 'easy');
+  var paper = S.tplPaper || 'plain';
 
-  /* thumbnails run the very same draw code at small size */
-  var prevs = $('sheet').querySelectorAll('canvas[data-prev]');
-  for(var i = 0; i < prevs.length; i++){
-    renderTemplate(prevs[i].getContext('2d'), 150, 100, prevs[i].getAttribute('data-prev'), 'plain');
-  }
+  function render(){
+    S.tplCat = cat; S.tplPaper = paper;
+    var list = TEMPLATES.filter(function(t){
+      if(t.id === 'blank') return true;
+      return (t.cat || 'easy') === cat;
+    });
+    var html = '<h2>Colouring pages</h2><p>Pick a picture to trace over and colour in.</p><div class="pickgrid">';
+    TPL_CATS.forEach(function(c){
+      var n = TEMPLATES.filter(function(t){ return (t.cat||'easy') === c.id; }).length;
+      html += '<button data-cat="' + c.id + '" class="' + (cat===c.id?'sel':'') + '">' +
+              '<span class="pe">' + c.emoji + '</span>' + c.name + ' (' + n + ')</button>';
+    });
+    html += '</div><p style="margin:10px 0 6px;font-weight:900">Paper</p><div class="pickgrid">';
+    PAPERS.forEach(function(p){
+      html += '<button data-paper="' + p.id + '" class="' + (paper===p.id?'sel':'') + '">' + p.name + '</button>';
+    });
+    html += '</div><div class="tplgrid">';
+    list.forEach(function(t){
+      html += '<button data-tpl="' + t.id + '"><canvas width="150" height="100" data-prev="' + t.id + '"></canvas>' + t.name + '</button>';
+    });
+    html += '</div><div class="sheetrow"><button id="tplNo">Cancel</button></div>';
+    showModal(html);
 
-  var chosenPaper = 'plain';
-  var paperBtns = $('sheet').querySelectorAll('[data-paper]');
-  for(var k = 0; k < paperBtns.length; k++){
-    (function(btn){
-      btn.addEventListener('click', function(){
-        chosenPaper = btn.getAttribute('data-paper');
-        for(var m = 0; m < paperBtns.length; m++) paperBtns[m].classList.remove('sel');
-        btn.classList.add('sel');
-      });
-    })(paperBtns[k]);
+    /* thumbnails run the very same draw code at small size */
+    var prevs = $('sheet').querySelectorAll('canvas[data-prev]');
+    for(var i = 0; i < prevs.length; i++){
+      renderTemplate(prevs[i].getContext('2d'), 150, 100, prevs[i].getAttribute('data-prev'), 'plain', true);
+    }
+    bindAll('[data-cat]', function(b){ cat = b.getAttribute('data-cat'); render(); });
+    bindAll('[data-paper]', function(b){ paper = b.getAttribute('data-paper'); render(); });
+    bindAll('[data-tpl]', function(b){
+      pushUndo();
+      clearBoard();
+      renderTemplate(DX, DC.width, DC.height, b.getAttribute('data-tpl'), paper);
+      DX.setTransform(DPR,0,0,DPR,0,0);
+      DX.lineCap='round'; DX.lineJoin='round';
+      closeModal(); toast('Ready to colour!');
+      afterEdit();
+    });
+    $('tplNo').onclick = closeModal;
   }
-  var tplBtns = $('sheet').querySelectorAll('[data-tpl]');
-  for(var j = 0; j < tplBtns.length; j++){
-    (function(btn){
-      btn.addEventListener('click', function(){
-        pushUndo();
-        var s = clearBoard();
-        renderTemplate(DX, DC.width, DC.height, btn.getAttribute('data-tpl'), chosenPaper);
-        DX.setTransform(DPR,0,0,DPR,0,0);
-        DX.lineCap='round'; DX.lineJoin='round';
-        closeModal(); toast('Ready to colour!');
-        afterEdit();
-      });
-    })(tplBtns[j]);
+  render();
+}
+
+/* wire every element matching sel inside the open sheet */
+function bindAll(sel, fn){
+  var els = $('sheet').querySelectorAll(sel);
+  for(var i = 0; i < els.length; i++){
+    (function(b){ b.addEventListener('click', function(){ fn(b); }); })(els[i]);
   }
-  $('tplNo').onclick = closeModal;
 }
 
 /* ============================================================
@@ -1166,21 +1742,31 @@ function openTemplates(){
    ============================================================ */
 function enterPaint(){
   bindCanvas($('paintCanvas'), $('paintOverlay'), 'paint');
-  fitStack($('paintWrap'), $('paintStack'), $('paintCanvas'), [$('paintOverlay')]);
+  fitStack($('paintWrap'), $('paintStack'), $('paintCanvas'), [$('paintOverlay'), $('paintBg')]);
+  renderEnv($('paintBg'), S.paintEnv);
   buildRail('paintRail'); buildColors('paintColors'); buildSizes('paintSizes'); buildShapeBar();
   refreshUndoButtons();
 }
 $('undoBtn').addEventListener('click', doUndo);
 $('tplBtn').addEventListener('click', openTemplates);
 $('clearBtn').addEventListener('click', function(){ pushUndo(); clearBoard(); toast('Fresh paper!'); });
-$('savePaint').addEventListener('click', function(){ saveToGallery($('paintCanvas'), 'paint'); });
+$('savePaint').addEventListener('click', function(){
+  saveToGallery(flatten($('paintBg'), $('paintCanvas')), 'paint');
+});
+$('envBtn').addEventListener('click', function(){
+  openEnvPicker(S.paintEnv, function(id){
+    S.paintEnv = id; store.set('paintEnv', id);
+    renderEnv($('paintBg'), id); toast('Scene changed');
+  });
+});
 
 /* ============================================================
    SCREEN: ANIMATE
    ============================================================ */
 function enterAnim(){
   bindCanvas($('animCanvas'), $('animOverlay'), 'anim');
-  fitStack($('animWrap'), $('animStack'), $('animCanvas'), [$('animOverlay'), $('animOnion')]);
+  fitStack($('animWrap'), $('animStack'), $('animCanvas'), [$('animOverlay'), $('animOnion'), $('animBg')]);
+  renderEnv($('animBg'), S.animEnv);
   buildRail('animRail'); buildColors('animColors'); buildSizes('animSizes');
   if(S.frames.length === 0) S.frames = [blankFrame()];
   if(S.frameIdx >= S.frames.length) S.frameIdx = 0;
@@ -1193,9 +1779,7 @@ function blankFrame(){
   var c = document.createElement('canvas');
   c.width = Math.max(1, $('animCanvas').width);
   c.height = Math.max(1, $('animCanvas').height);
-  var g = c.getContext('2d');
-  g.fillStyle = '#ffffff'; g.fillRect(0,0,c.width,c.height);
-  return c;
+  return c;   /* frames hold art only; the scene lives on its own layer */
 }
 
 /* The visible canvas is the scratch surface; every edit is copied
@@ -1217,7 +1801,7 @@ function loadFrame(i){
   var f = S.frames[i];
   var ac = $('animCanvas'), g = ac.getContext('2d');
   g.save(); g.setTransform(1,0,0,1,0,0);
-  g.fillStyle = '#ffffff'; g.fillRect(0,0,ac.width,ac.height);
+  g.clearRect(0,0,ac.width,ac.height);
   if(f) g.drawImage(f, 0, 0, ac.width, ac.height);
   g.restore(); g.setTransform(DPR,0,0,DPR,0,0);
   g.lineCap='round'; g.lineJoin='round';
@@ -1242,6 +1826,7 @@ function frameThumb(f){
   c.width = 74; c.height = 56;
   var g = c.getContext('2d');
   g.fillStyle = '#fff'; g.fillRect(0,0,74,56);
+  if($('animBg').width) g.drawImage($('animBg'), 0, 0, 74, 56);
   g.drawImage(f, 0, 0, 74, 56);
   try{ return c.toDataURL('image/jpeg', 0.6); }catch(e){ return ''; }
 }
@@ -1343,7 +1928,7 @@ function togglePlay(){
     i = (i + 1) % S.frames.length;
     var ac = $('animCanvas'), g = ac.getContext('2d');
     g.save(); g.setTransform(1,0,0,1,0,0);
-    g.fillStyle = '#fff'; g.fillRect(0,0,ac.width,ac.height);
+    g.clearRect(0,0,ac.width,ac.height);
     g.drawImage(S.frames[i], 0, 0, ac.width, ac.height);
     g.restore();
   }, 1000 / S.fps);
@@ -1359,6 +1944,12 @@ function stopPlay(){
 
 $('animUndo').addEventListener('click', doUndo);
 $('animClear').addEventListener('click', function(){ pushUndo(); clearBoard(); captureFrame(); });
+$('animEnvBtn').addEventListener('click', function(){
+  openEnvPicker(S.animEnv, function(id){
+    S.animEnv = id; store.set('animEnv', id);
+    renderEnv($('animBg'), id); buildStrip(); toast('Scene changed');
+  });
+});
 
 /* ============================================================
    SCREEN: STICKERS
@@ -1369,6 +1960,10 @@ var STK_BIG = STK_LITTLE.concat([
   '🐢','🐙','🦋','🐸','🦊','🐧',
   '🚀','🪐','⛵','🏰','🍕','🍩',
   '⚡','❄️','🌙','🌟','🍒','🤖']);
+var STK_TEEN = ['🎧','🛹','🎸','🔥','💀','🌙',
+  '⚡','🎮','🕶️','💎','🖤','🌸',
+  '🦋','🐉','🎯','🏀','🌊','🎭',
+  '💫','🌈','🌌','🎲','🍭','👾'];
 var SCENE_BGS = ['#bfe8ff','#d8f7c8','#ffe0ef','#fff3c4','#e6dcff','#2b2350'];
 
 function buildScene(){
@@ -1395,7 +1990,7 @@ function buildScene(){
   });
   var tray = $('stickerTray');
   tray.innerHTML = '';
-  (isLittle() ? STK_LITTLE : STK_BIG).forEach(function(emo){
+  (isLittle() ? STK_LITTLE : (isTeen() ? STK_TEEN : STK_BIG)).forEach(function(emo){
     var b = document.createElement('button');
     b.textContent = emo;
     b.setAttribute('aria-label', 'Add sticker');
@@ -1403,6 +1998,17 @@ function buildScene(){
     tray.appendChild(b);
   });
   $('sceneStage').style.background = S.sceneBg;
+  fitSceneBg();
+}
+
+function fitSceneBg(){
+  var stage = $('sceneStage'), c = $('sceneBg');
+  var w = stage.clientWidth, h = stage.clientHeight;
+  if(w < 10 || h < 10) return;
+  c.width = Math.round(w * DPR); c.height = Math.round(h * DPR);
+  if(S.sceneEnv === 'none'){ c.style.display = 'none'; return; }
+  c.style.display = 'block';
+  renderEnv(c, S.sceneEnv);
 }
 
 function addSticker(emo){
@@ -1446,6 +2052,12 @@ function attachDrag(o){
   o.el.addEventListener('pointercancel', stop);
 }
 $('sceneStage').addEventListener('pointerdown', function(){ selectSticker(null); });
+$('sceneEnvBtn').addEventListener('click', function(){
+  openEnvPicker(S.sceneEnv, function(id){
+    S.sceneEnv = id; store.set('sceneEnv', id);
+    fitSceneBg(); toast('Scene changed');
+  });
+});
 
 function scaleSel(f){
   var o = S.selectedSticker;
@@ -1476,6 +2088,7 @@ function sceneToCanvas(){
   c.width = w; c.height = h;
   var g = c.getContext('2d');
   g.fillStyle = S.sceneBg; g.fillRect(0,0,w,h);
+  if(S.sceneEnv !== 'none' && $('sceneBg').width) g.drawImage($('sceneBg'), 0, 0, w, h);
   g.textAlign = 'center'; g.textBaseline = 'middle';
   S.stickers.forEach(function(s){
     g.save(); g.translate(s.x, s.y); g.rotate(s.rot*Math.PI/180);
@@ -1998,7 +2611,7 @@ function stopSequencer(){
 /* ============================================================
    GALLERY
    ============================================================ */
-var MAX_SAVES = 12;
+var MAX_SAVES = 48;
 
 function thumbData(canvas, maxW){
   var scale = Math.min(1, (maxW || 640) / canvas.width);
@@ -2032,38 +2645,107 @@ function saveAnimation(){
   if(S.frames.length < 2){ toast('Add another frame first!'); return; }
   var frames = [];
   for(var i = 0; i < S.frames.length; i++){
-    var d = thumbData(S.frames[i], 320);
+    var d = thumbData(flatten($('animBg'), S.frames[i]), 320);
     if(!d){ toast('Could not save this one'); return; }
     frames.push(d);
   }
   commitSave({ id: Date.now(), kind: 'anim', data: frames[0], frames: frames, fps: S.fps });
 }
 
+var GAL_KINDS = [
+  { id:'all',   name:'Everything', emoji:'\u2728' },
+  { id:'paint', name:'Paintings',  emoji:'\uD83C\uDFA8' },
+  { id:'anim',  name:'Cartoons',   emoji:'\uD83C\uDFAC' },
+  { id:'scene', name:'Stickers',   emoji:'\uD83E\uDD84' }
+];
+var GAL_LABEL = { paint:'Painting', scene:'Stickers', anim:'Cartoon' };
+
+function whenMade(ts){
+  var diff = Date.now() - ts;
+  var day = 86400000;
+  if(diff < day) return 'Today';
+  if(diff < day*2) return 'Yesterday';
+  if(diff < day*7) return Math.floor(diff/day) + ' days ago';
+  var d = new Date(ts);
+  return d.getDate() + '/' + (d.getMonth()+1);
+}
+
+function buildGalleryBar(items){
+  var bar = $('galBar');
+  bar.innerHTML = '';
+  var lbl = document.createElement('span');
+  lbl.className = 'lbl'; lbl.textContent = 'Show';
+  bar.appendChild(lbl);
+
+  GAL_KINDS.forEach(function(k){
+    var n = k.id === 'all' ? items.length
+                           : items.filter(function(x){ return x.kind === k.id; }).length;
+    var b = document.createElement('button');
+    b.className = 'chip' + (S.galFilter === k.id ? ' sel' : '');
+    b.innerHTML = k.emoji + ' ' + k.name + ' (' + n + ')';
+    b.addEventListener('click', function(){ S.galFilter = k.id; buildGallery(); });
+    bar.appendChild(b);
+  });
+
+  var sep = document.createElement('div'); sep.className = 'sep'; bar.appendChild(sep);
+  var slbl = document.createElement('span');
+  slbl.className = 'lbl'; slbl.textContent = 'Order';
+  bar.appendChild(slbl);
+
+  [['new','\u2B07 Newest'],['old','\u2B06 Oldest'],['kind','\uD83D\uDCC1 By type']].forEach(function(o){
+    var b = document.createElement('button');
+    b.className = 'chip' + (S.galSort === o[0] ? ' sel' : '');
+    b.textContent = o[1];
+    b.addEventListener('click', function(){ S.galSort = o[0]; buildGallery(); });
+    bar.appendChild(b);
+  });
+}
+
 function buildGallery(){
-  var items = store.get('gallery', []);
+  var all = store.get('gallery', []);
+  buildGalleryBar(all);
+
+  var items = all.filter(function(x){ return S.galFilter === 'all' || x.kind === S.galFilter; });
+  if(S.galSort === 'old') items = items.slice().sort(function(a,b){ return a.id - b.id; });
+  else if(S.galSort === 'kind') items = items.slice().sort(function(a,b){
+    if(a.kind === b.kind) return b.id - a.id;
+    return a.kind < b.kind ? -1 : 1;
+  });
+  else items = items.slice().sort(function(a,b){ return b.id - a.id; });
+
   var g = $('ggrid');
   g.innerHTML = '';
-  if(items.length === 0){
-    g.innerHTML = '<div class="empty" style="grid-column:1/-1">Nothing saved yet.<br>Make something in Paint, Animate or Stickers!</div>';
+
+  if(all.length === 0){
+    g.innerHTML = '<div class="empty" style="grid-column:1/-1">Nothing saved yet.<br>' +
+                  'Make something in Paint, Animate or Stickers, then tap Save.</div>';
     return;
   }
-  var LABEL = { paint:'Painting', scene:'Stickers', anim:'Cartoon' };
+  if(items.length === 0){
+    g.innerHTML = '<div class="empty" style="grid-column:1/-1">No ' +
+                  (GAL_KINDS.filter(function(k){ return k.id===S.galFilter; })[0]||{}).name +
+                  ' yet.<br>Tap Everything to see the rest.</div>';
+    return;
+  }
 
   items.forEach(function(it){
     var d = document.createElement('div');
     d.className = 'gitem';
     var img = document.createElement('img');
-    img.src = it.data; img.alt = LABEL[it.kind] || 'Picture';
+    img.src = it.data; img.alt = GAL_LABEL[it.kind] || 'Picture';
     d.appendChild(img);
     var tag = document.createElement('div');
-    tag.className = 'tag'; tag.textContent = LABEL[it.kind] || 'Picture';
+    tag.className = 'tag'; tag.textContent = GAL_LABEL[it.kind] || 'Picture';
     d.appendChild(tag);
+    var when = document.createElement('div');
+    when.className = 'when'; when.textContent = whenMade(it.id);
+    d.appendChild(when);
 
     var row = document.createElement('div');
     row.className = 'grow';
 
     var view = document.createElement('button');
-    view.textContent = it.kind === 'anim' ? '▶ Play' : '🔍 Big';
+    view.textContent = it.kind === 'anim' ? '\u25B6 Play' : '\uD83D\uDD0D Big';
     view.addEventListener('click', function(){
       if(it.kind === 'anim') playSavedAnim(it); else viewBig(it);
     });
@@ -2071,14 +2753,14 @@ function buildGallery(){
 
     if(it.kind === 'anim'){
       var edit = document.createElement('button');
-      edit.textContent = '✏️';
+      edit.textContent = '\u270F\uFE0F';
       edit.setAttribute('aria-label', 'Keep working on this cartoon');
       edit.addEventListener('click', function(){ loadAnimIntoEditor(it); });
       row.appendChild(edit);
     }
 
     var del = document.createElement('button');
-    del.className = 'del'; del.textContent = '🗑️';
+    del.className = 'del'; del.textContent = '\uD83D\uDDD1\uFE0F';
     del.setAttribute('aria-label', 'Delete');
     del.addEventListener('click', function(){
       grownUpGate('Delete this?', function(){
@@ -2091,18 +2773,23 @@ function buildGallery(){
     g.appendChild(d);
   });
 
-  var wipe = document.createElement('div');
-  wipe.style.cssText = 'grid-column:1/-1;text-align:center;padding-top:10px';
+  var foot = document.createElement('div');
+  foot.style.cssText = 'grid-column:1/-1;text-align:center;padding-top:10px';
+  var count = document.createElement('div');
+  count.style.cssText = 'color:#5b5175;font-weight:700;font-size:14px;margin-bottom:10px';
+  count.textContent = 'Showing ' + items.length + ' of ' + all.length +
+                      ' \u00B7 room for ' + Math.max(0, MAX_SAVES - all.length) + ' more';
+  foot.appendChild(count);
   var wb = document.createElement('button');
   wb.className = 'act warn'; wb.style.margin = '0 auto';
-  wb.textContent = '🗑️ Delete everything';
+  wb.textContent = '\uD83D\uDDD1\uFE0F Delete everything';
   wb.addEventListener('click', function(){
     grownUpGate('Delete everything saved?', function(){
       store.del('gallery'); buildGallery(); toast('All cleared');
     });
   });
-  wipe.appendChild(wb);
-  g.appendChild(wipe);
+  foot.appendChild(wb);
+  g.appendChild(foot);
 }
 
 function viewBig(it){
@@ -2183,7 +2870,7 @@ for(var ci = 0; ci < cards.length; ci++){
 
 function applyAge(){
   body.classList.toggle('little', isLittle());
-  $('agePill').textContent = isLittle() ? 'Little' : 'Big';
+  $('agePill').textContent = isLittle() ? 'Little' : (isTeen() ? 'Teen' : 'Big');
   if(palette().indexOf(S.color) === -1) S.color = palette()[0];
   S.size = isLittle() ? 26 : 10;
   buildRail('paintRail'); buildRail('animRail');
@@ -2196,14 +2883,17 @@ function applyAge(){
 }
 
 $('ageBtn').addEventListener('click', function(){
-  showModal('<h2>Who is playing?</h2><p>This changes how many buttons show up.</p><div class="optgrid">' +
-    '<button id="optLittle" class="' + (isLittle()?'sel':'') + '"><span class="oe">🧒</span>' +
+  showModal('<h2>Who is playing?</h2><p>This changes the tools, colours and pictures on offer.</p><div class="optgrid">' +
+    '<button id="optLittle" class="' + (S.age==='little'?'sel':'') + '"><span class="oe">🧒</span>' +
       '<span class="on2">Little</span><span class="od">Ages 3-6</span></button>' +
-    '<button id="optBig" class="' + (!isLittle()?'sel':'') + '"><span class="oe">🧑</span>' +
+    '<button id="optBig" class="' + (S.age==='big'?'sel':'') + '"><span class="oe">🧑</span>' +
       '<span class="on2">Big</span><span class="od">Ages 7-12</span></button>' +
+    '<button id="optTeen" class="' + (S.age==='teen'?'sel':'') + '"><span class="oe">🕺</span>' +
+      '<span class="on2">Teen</span><span class="od">Ages 13+</span></button>' +
     '</div><div class="sheetrow"><button class="go" id="optDone">Done</button></div>');
   $('optLittle').onclick = function(){ S.age='little'; store.set('age','little'); applyAge(); closeModal(); toast('Little kid mode'); };
   $('optBig').onclick    = function(){ S.age='big';    store.set('age','big');    applyAge(); closeModal(); toast('Big kid mode'); };
+  $('optTeen').onclick   = function(){ S.age='teen';   store.set('age','teen');   applyAge(); closeModal(); toast('Teen mode'); };
   $('optDone').onclick   = closeModal;
 });
 
@@ -2232,12 +2922,15 @@ function onResize(){
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(function(){
     if(S.screen === 'paint'){
-      fitStack($('paintWrap'), $('paintStack'), $('paintCanvas'), [$('paintOverlay')]);
+      fitStack($('paintWrap'), $('paintStack'), $('paintCanvas'), [$('paintOverlay'), $('paintBg')]);
+      renderEnv($('paintBg'), S.paintEnv);
     }
     if(S.screen === 'anim'){
-      fitStack($('animWrap'), $('animStack'), $('animCanvas'), [$('animOverlay'), $('animOnion')]);
+      fitStack($('animWrap'), $('animStack'), $('animCanvas'), [$('animOverlay'), $('animOnion'), $('animBg')]);
+      renderEnv($('animBg'), S.animEnv);
       loadFrame(S.frameIdx);
     }
+    if(S.screen === 'scene') fitSceneBg();
   }, 160);
 }
 window.addEventListener('resize', onResize);
@@ -2247,7 +2940,9 @@ applyAge();
 go('home');
 
 /* exposed only so the page can be smoke-tested from the console */
-window.__playbox = { S:S, SOUNDS:SOUNDS, TEMPLATES:TEMPLATES, TOOLS:TOOLS, SHAPES:SHAPES, PRESETS:PRESETS, go:go };
+window.__playbox = { S:S, SOUNDS:SOUNDS, TEMPLATES:TEMPLATES, TOOLS:TOOLS, SHAPES:SHAPES,
+                     PRESETS:PRESETS, TPL_CATS:TPL_CATS, GAL_KINDS:GAL_KINDS, ENVIRONMENTS:ENVIRONMENTS,
+                     ENV_CATS:ENV_CATS, renderTemplate:renderTemplate, renderEnv:renderEnv, flatten:flatten, go:go };
 
 })();
 </script>
