@@ -16,12 +16,28 @@ loads after that, which is what makes it work behind a locked-down kids browser.
   neon glow, rainbow, sparkle, spray, plus eraser and paint-bucket fill.
 - **7 shape tools** — line, box, circle, triangle, star, heart, arrow, each
   switchable between filled and outline, with a live preview while dragging.
-- **12 colouring pages** — fish, butterfly, flower, house, rocket, car, cat,
-  ice cream, robot, tree, stars, balloons. Drawn in code, so they stay sharp
-  at any screen size and cost nothing to download.
+- **26 colouring pages in 4 categories**, all drawn in code so they stay sharp
+  at any size and cost nothing to download:
+  - *Easy* — fish, butterfly, flower, house, rocket, car, cat, ice cream,
+    robot, tree, stars, balloons
+  - *Anime* — anime girl, anime boy, chibi, manga eyes
+  - *Cool* — skateboard, guitar, sneaker, headphones, dragon, sports car, skull
+  - *Patterns* — mandala, rose, galaxy
 - **4 paper types** — plain, grid, lined, dots.
-- **Colour mixer** (Big mode) — hue/brightness/lightness sliders; the last six
-  custom colours stay in the palette.
+- **Colour mixer** (Big and Teen) — hue/brightness/lightness sliders; the last
+  six custom colours stay in the palette.
+
+### 🌍 Scenes
+16 full-bleed environments sit on a **separate background layer** beneath the
+art, in Paint, Animate and Stickers:
+
+- *Nature* — meadow, forest, mountains, beach, under the sea, desert, snowy
+  day, jungle
+- *Sky & space* — sunset, night sky, outer space, rainbow sky
+- *Places* — city, bedroom, on stage
+
+Because the scene is its own layer, swapping it never disturbs the drawing on
+top, and the eraser cuts through to reveal it.
 
 ### 🎬 Animate
 Draw frame by frame and play it back as a cartoon.
@@ -51,24 +67,29 @@ background, save the whole thing as a picture.
 - Tempo control from 50 to 200 bpm.
 
 ### 🖼️ My Stuff
-Everything saved, as thumbnails. Paintings and sticker scenes open large;
-cartoons play back. Deleting is behind a grown-up gate.
+Everything saved, as thumbnails, with **filter and sort**: show everything,
+paintings, cartoons or stickers (each with a live count), ordered by newest,
+oldest or type. Each item carries a date badge. Paintings and sticker scenes
+open large; cartoons play back and can be reopened for more editing. Deleting
+is behind a grown-up gate. Holds 48 items.
 
-## Little mode vs Big mode
+## Age modes
 
-The **Little / Big** button in the top bar reshapes the whole app:
+The **Little / Big / Teen** button in the top bar reshapes the whole app:
 
-| | Little (3–6) | Big (7–12) |
-|---|---|---|
-| Brushes | 7 | 13 |
-| Colours | 8 | 18 + mixer |
-| Brush sizes | 3 | 4 |
-| Music pads | 6 | 8 |
-| Sequencer | hidden | 16 steps × 6 tracks |
-| Stickers | 12 | 30 |
-| Buttons | larger, wider tool rail | standard |
+| | Little (3–6) | Big (7–12) | Teen (13+) |
+|---|---|---|---|
+| Brushes | 7 | 13 | 13 |
+| Colours | 8 | 18 + mixer | 18 bolder + mixer |
+| Brush sizes | 3 | 4 | 4 |
+| Music pads | 6 | 8 | 8 |
+| Sequencer | hidden | 16 × 6 | 16 × 6 |
+| Stickers | 12 | 30 | 24 (older set) |
+| Pages open on | Easy | Easy | Anime |
+| Buttons | larger, wider rail | standard | standard |
 
-The choice is remembered between visits.
+Every category of colouring page is reachable in all three modes — the age
+only changes which one opens first. The choice is remembered between visits.
 
 ## Grown-up gate
 
@@ -141,6 +162,16 @@ home screen like an app.
   They render with the tablet's own emoji font.
 - Paint and Animate share one drawing engine, re-pointed at whichever canvas
   the current screen owns (`bindCanvas`).
+- Each drawing screen is a stack of canvases: `bg` (opaque scene) → `board`
+  (transparent art) → `onion` (animation ghost) → `overlay` (shape preview).
+  The art layer is transparent on purpose; that is what lets scenes be swapped
+  freely and what makes the eraser a `destination-out` hole rather than white
+  paint. Saving calls `flatten()` to composite scene and art into one opaque
+  image.
+- Animation frames store **art only**. Thumbnails and saved cartoons composite
+  the scene in at write time.
+- Anime pages are drawn in a generic style; they deliberately do not copy any
+  existing character.
 - Shapes preview on a transparent overlay canvas stacked above the real one,
   so dragging a shape never damages what is underneath.
 - The canvas caps at 2× device pixels so older Fire tablets keep up.
