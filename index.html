@@ -1337,7 +1337,7 @@ function applyExtraTrace(entry){
     pushUndo();
     clearBoard();
     var z = cssSize(DC);
-    var sc = Math.min(z.w / img.width, z.h / img.height);
+    var sc = Math.min(z.w / img.width, z.h / img.height) * 0.92;  /* breathing room */
     var w = Math.max(1, Math.round(img.width * sc)), h = Math.max(1, Math.round(img.height * sc));
     var keyed = keyOutWhite(img, Math.round(w * DPR), Math.round(h * DPR));
     DX.drawImage(keyed, (z.w - w)/2, (z.h - h)/2, w, h);
@@ -2839,7 +2839,7 @@ function applyMyTrace(it){
     pushUndo();
     clearBoard();
     var z = cssSize(DC);
-    var sc = Math.min(z.w / img.width, z.h / img.height);
+    var sc = Math.min(z.w / img.width, z.h / img.height) * 0.92;  /* breathing room */
     var w = img.width * sc, h = img.height * sc;
     DX.drawImage(img, (z.w - w)/2, (z.h - h)/2, w, h);
     afterEdit();
@@ -3122,7 +3122,7 @@ function openArtImport(){
       pushUndo();
       var ac = $('animCanvas'), g = ac.getContext('2d');
       var z = cssSize(ac);
-      var sc = Math.min(z.w / img.width, z.h / img.height);
+      var sc = Math.min(z.w / img.width, z.h / img.height) * 0.92;  /* breathing room */
       var w = img.width * sc, h = img.height * sc;
       g.drawImage(img, (z.w - w)/2, (z.h - h)/2, w, h);
       captureFrame(); buildStrip();
@@ -4082,7 +4082,7 @@ function continueInPaint(it){
       pushUndo();
       clearBoard();
       var z = cssSize(DC);
-      var sc = Math.min(z.w / img.width, z.h / img.height);
+      var sc = Math.min(z.w / img.width, z.h / img.height) * 0.92;  /* breathing room */
       var w = img.width * sc, h = img.height * sc;
       DX.drawImage(img, (z.w - w)/2, (z.h - h)/2, w, h);
       toast('Carry on where you left off');

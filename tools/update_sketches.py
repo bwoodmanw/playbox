@@ -109,6 +109,74 @@ def even_grid(w, h, n):
     return best
 
 
+def subject_box(cell, pad=12):
+    """Bounding box of the drawing itself.
+
+    A plain getbbox() is dragged out to the edges by whatever junk came along
+    with the crop: a rule line, a sliver of the neighbouring cell, the remains
+    of a numeral. So find the connected blobs of ink instead, keep the biggest
+    one plus anything comparable to it, and ignore the rest.
+    """
+    from collections import deque
+    w0, h0 = cell.size
+    SCALE = 200.0 / max(w0, h0)
+    if SCALE > 1:
+        SCALE = 1.0
+    w, h = max(1, int(w0 * SCALE)), max(1, int(h0 * SCALE))
+    m = cell.convert("L").resize((w, h), Image.BILINEAR).point(
+        lambda v: 1 if v < 205 else 0)
+    px = list(m.getdata())
+
+    seen = bytearray(w * h)
+    blobs = []
+    for start in range(w * h):
+        if px[start] == 0 or seen[start]:
+            continue
+        q = deque([start])
+        seen[start] = 1
+        x0 = x1 = start % w
+        y0 = y1 = start // w
+        n = 0
+        while q:
+            i = q.popleft()
+            n += 1
+            x, y = i % w, i // w
+            if x < x0: x0 = x
+            if x > x1: x1 = x
+            if y < y0: y0 = y
+            if y > y1: y1 = y
+            for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < w and 0 <= ny < h:
+                    j = ny * w + nx
+                    if px[j] and not seen[j]:
+                        seen[j] = 1
+                        q.append(j)
+        blobs.append((n, x0, y0, x1, y1))
+
+    if not blobs:
+        return None
+    blobs.sort(reverse=True)
+    biggest = blobs[0][0]
+
+    def solid(b):
+        """Reject rule fragments and leftover numerals: a hairline is thin in
+        one direction, a numeral is simply tiny."""
+        bw, bh = b[3] - b[1] + 1, b[4] - b[2] + 1
+        if min(bw, bh) < 4:
+            return False                     # hairline
+        if b[0] < biggest * 0.15:
+            return False                     # crumb
+        return True
+
+    keep = [b for b in blobs if b is blobs[0] or solid(b)]
+    x0 = min(b[1] for b in keep); y0 = min(b[2] for b in keep)
+    x1 = max(b[3] for b in keep); y1 = max(b[4] for b in keep)
+    inv = 1.0 / SCALE
+    return (max(0, int(x0 * inv) - pad), max(0, int(y0 * inv) - pad),
+            min(w0, int((x1 + 1) * inv) + pad), min(h0, int((y1 + 1) * inv) + pad))
+
+
 def is_lineart(im):
     """Line art is mostly white paper with a little ink on it. Anything else
     - colour, or dark shaded art - gets converted to outlines."""
@@ -117,7 +185,7 @@ def is_lineart(im):
     total = float(sum(hist)) or 1.0
     white = sum(hist[240:]) / total
     mean = ImageStat.Stat(g).mean[0]
-    return white > 0.55 and mean > 195
+    return white > 0.66 and mean > 212
 
 
 def to_lineart(cell):
@@ -125,11 +193,52 @@ def to_lineart(cell):
     if is_lineart(cell):
         return cell
     g = cell.convert("L").filter(ImageFilter.CONTOUR)
-    # CONTOUR draws a frame round the edge - shave it off
-    g = g.crop((2, 2, g.width - 2, g.height - 2))
+    g = g.crop((3, 3, g.width - 3, g.height - 3))
     g = ImageOps.autocontrast(g, cutoff=1)
     g = g.point(lambda v: 255 if v > 205 else int(v * 0.55))
     return g.convert("RGB")
+
+
+def strip_rules(cell):
+    """Eat away ruled border lines from the edges of a cropped cell.
+
+    Blanket percentage insets were the old approach and they were wrong in
+    both directions at once: too small to clear a rule line on one sheet, big
+    enough to slice the feet off a drawing on another.
+    """
+    g = cell.convert("L")
+    w, h = g.size
+    px = g.load()
+    xs = range(0, w, max(1, w // 220))
+    ys = range(0, h, max(1, h // 220))
+
+    def row_dark(y):
+        return sum(1 for x in xs if px[x, y] < 200) / float(len(xs))
+
+    def col_dark(x):
+        return sum(1 for y in ys if px[x, y] < 200) / float(len(ys))
+
+    lim_v, lim_h = max(2, h // 8), max(2, w // 8)
+    t = 0
+    while t < lim_v and row_dark(t) > 0.55:
+        t += 1
+    b = h
+    while b > h - lim_v and row_dark(b - 1) > 0.55:
+        b -= 1
+    l = 0
+    while l < lim_h and col_dark(l) > 0.55:
+        l += 1
+    r = w
+    while r > w - lim_h and col_dark(r - 1) > 0.55:
+        r -= 1
+    # shave one more pixel each side to clear the anti-aliased remnant
+    if t or b != h:
+        t, b = min(t + 1, h - 1), max(b - 1, t + 1)
+    if l or r != w:
+        l, r = min(l + 1, w - 1), max(r - 1, l + 1)
+    if r - l < 10 or b - t < 10:
+        return cell
+    return cell.crop((l, t, r, b))
 
 
 def erase_cell_number(cell):
@@ -157,23 +266,21 @@ def slice_sheet(path, prefix, want=None):
             n += 1
             x0, x1 = xs[c], xs[c + 1]
             y0, y1 = ys[r], ys[r + 1]
-            cw, ch = x1 - x0, y1 - y0
-            # trim the rule lines and the printed cell number
-            cell = im.crop((int(x0 + cw * 0.09), int(y0 + ch * 0.085),
-                            int(x1 - cw * 0.025), int(y1 - ch * 0.02)))
+            # crop at the detected boundary, then take the rule lines off
+            # precisely rather than guessing with percentages
+            cell = im.crop((x0, y0, x1, y1))
+            cell = strip_rules(cell)
             cell = erase_cell_number(cell)
-            grey = cell.convert("L")
-            box = grey.point(lambda v: 255 if v < 235 else 0).getbbox()
+            cell = to_lineart(cell)
+            cell = strip_rules(cell)      # CONTOUR draws its own frame
+            box = subject_box(cell)
             if box:
-                pad = 8
-                cell = cell.crop((max(0, box[0] - pad), max(0, box[1] - pad),
-                                  min(cell.width, box[2] + pad),
-                                  min(cell.height, box[3] + pad)))
+                cell = cell.crop(box)
+            cell = strip_rules(cell)      # any rule fragment left at the edge
             if cell.width < 20 or cell.height < 20:
                 n -= 1
                 continue
             cell.thumbnail((MAX_SIDE, MAX_SIDE), Image.LANCZOS)
-            cell = to_lineart(cell)
             # line art needs very few tones; a small palette shrinks the PNG ~70%
             cell = cell.convert("L").quantize(colors=16, method=Image.MEDIANCUT)
             out = os.path.join(TRACES, "%s-%02d.png" % (prefix, n))
