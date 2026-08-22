@@ -1,5 +1,365 @@
 [
   {
+    "file": "anime-character-01.png",
+    "name": "Anime character 01"
+  },
+  {
+    "file": "anime-character-02.png",
+    "name": "Anime character 02"
+  },
+  {
+    "file": "anime-character-03.png",
+    "name": "Anime character 03"
+  },
+  {
+    "file": "anime-character-04.png",
+    "name": "Anime character 04"
+  },
+  {
+    "file": "anime-character-05.png",
+    "name": "Anime character 05"
+  },
+  {
+    "file": "anime-character-06.png",
+    "name": "Anime character 06"
+  },
+  {
+    "file": "anime-character-07.png",
+    "name": "Anime character 07"
+  },
+  {
+    "file": "anime-character-08.png",
+    "name": "Anime character 08"
+  },
+  {
+    "file": "anime-character-09.png",
+    "name": "Anime character 09"
+  },
+  {
+    "file": "anime-character-10.png",
+    "name": "Anime character 10"
+  },
+  {
+    "file": "anime-character-11.png",
+    "name": "Anime character 11"
+  },
+  {
+    "file": "anime-character-12.png",
+    "name": "Anime character 12"
+  },
+  {
+    "file": "anime-character-13.png",
+    "name": "Anime character 13"
+  },
+  {
+    "file": "anime-character-14.png",
+    "name": "Anime character 14"
+  },
+  {
+    "file": "anime-character-15.png",
+    "name": "Anime character 15"
+  },
+  {
+    "file": "anime-character-16.png",
+    "name": "Anime character 16"
+  },
+  {
+    "file": "anime-character-17.png",
+    "name": "Anime character 17"
+  },
+  {
+    "file": "anime-character-18.png",
+    "name": "Anime character 18"
+  },
+  {
+    "file": "anime-character-19.png",
+    "name": "Anime character 19"
+  },
+  {
+    "file": "anime-character-20.png",
+    "name": "Anime character 20"
+  },
+  {
+    "file": "anime-character-21.png",
+    "name": "Anime character 21"
+  },
+  {
+    "file": "anime-character-22.png",
+    "name": "Anime character 22"
+  },
+  {
+    "file": "anime-character-23.png",
+    "name": "Anime character 23"
+  },
+  {
+    "file": "anime-character-24.png",
+    "name": "Anime character 24"
+  },
+  {
+    "file": "anime-character-25.png",
+    "name": "Anime character 25"
+  },
+  {
+    "file": "anime-character-26.png",
+    "name": "Anime character 26"
+  },
+  {
+    "file": "anime-character-27.png",
+    "name": "Anime character 27"
+  },
+  {
+    "file": "anime-character-28.png",
+    "name": "Anime character 28"
+  },
+  {
+    "file": "anime-character-29.png",
+    "name": "Anime character 29"
+  },
+  {
+    "file": "anime-character-30.png",
+    "name": "Anime character 30"
+  },
+  {
+    "file": "anime-outfit-01.png",
+    "name": "Anime outfit 01"
+  },
+  {
+    "file": "anime-outfit-02.png",
+    "name": "Anime outfit 02"
+  },
+  {
+    "file": "anime-outfit-03.png",
+    "name": "Anime outfit 03"
+  },
+  {
+    "file": "anime-outfit-04.png",
+    "name": "Anime outfit 04"
+  },
+  {
+    "file": "anime-outfit-05.png",
+    "name": "Anime outfit 05"
+  },
+  {
+    "file": "anime-outfit-06.png",
+    "name": "Anime outfit 06"
+  },
+  {
+    "file": "anime-outfit-07.png",
+    "name": "Anime outfit 07"
+  },
+  {
+    "file": "anime-outfit-08.png",
+    "name": "Anime outfit 08"
+  },
+  {
+    "file": "anime-outfit-09.png",
+    "name": "Anime outfit 09"
+  },
+  {
+    "file": "anime-outfit-10.png",
+    "name": "Anime outfit 10"
+  },
+  {
+    "file": "anime-outfit-11.png",
+    "name": "Anime outfit 11"
+  },
+  {
+    "file": "anime-outfit-12.png",
+    "name": "Anime outfit 12"
+  },
+  {
+    "file": "anime-outfit-13.png",
+    "name": "Anime outfit 13"
+  },
+  {
+    "file": "anime-outfit-14.png",
+    "name": "Anime outfit 14"
+  },
+  {
+    "file": "anime-outfit-15.png",
+    "name": "Anime outfit 15"
+  },
+  {
+    "file": "anime-outfit-16.png",
+    "name": "Anime outfit 16"
+  },
+  {
+    "file": "anime-outfit-17.png",
+    "name": "Anime outfit 17"
+  },
+  {
+    "file": "anime-outfit-18.png",
+    "name": "Anime outfit 18"
+  },
+  {
+    "file": "anime-outfit-19.png",
+    "name": "Anime outfit 19"
+  },
+  {
+    "file": "anime-outfit-20.png",
+    "name": "Anime outfit 20"
+  },
+  {
+    "file": "anime-outfit-21.png",
+    "name": "Anime outfit 21"
+  },
+  {
+    "file": "anime-outfit-22.png",
+    "name": "Anime outfit 22"
+  },
+  {
+    "file": "anime-outfit-23.png",
+    "name": "Anime outfit 23"
+  },
+  {
+    "file": "anime-outfit-24.png",
+    "name": "Anime outfit 24"
+  },
+  {
+    "file": "anime-outfit-25.png",
+    "name": "Anime outfit 25"
+  },
+  {
+    "file": "anime-outfit-26.png",
+    "name": "Anime outfit 26"
+  },
+  {
+    "file": "anime-outfit-27.png",
+    "name": "Anime outfit 27"
+  },
+  {
+    "file": "anime-outfit-28.png",
+    "name": "Anime outfit 28"
+  },
+  {
+    "file": "anime-outfit-29.png",
+    "name": "Anime outfit 29"
+  },
+  {
+    "file": "anime-outfit-30.png",
+    "name": "Anime outfit 30"
+  },
+  {
+    "file": "dinosaur-01.png",
+    "name": "Dinosaur 01"
+  },
+  {
+    "file": "dinosaur-02.png",
+    "name": "Dinosaur 02"
+  },
+  {
+    "file": "dinosaur-03.png",
+    "name": "Dinosaur 03"
+  },
+  {
+    "file": "dinosaur-04.png",
+    "name": "Dinosaur 04"
+  },
+  {
+    "file": "dinosaur-05.png",
+    "name": "Dinosaur 05"
+  },
+  {
+    "file": "dinosaur-06.png",
+    "name": "Dinosaur 06"
+  },
+  {
+    "file": "dinosaur-07.png",
+    "name": "Dinosaur 07"
+  },
+  {
+    "file": "dinosaur-08.png",
+    "name": "Dinosaur 08"
+  },
+  {
+    "file": "dinosaur-09.png",
+    "name": "Dinosaur 09"
+  },
+  {
+    "file": "dinosaur-10.png",
+    "name": "Dinosaur 10"
+  },
+  {
+    "file": "dinosaur-11.png",
+    "name": "Dinosaur 11"
+  },
+  {
+    "file": "dinosaur-12.png",
+    "name": "Dinosaur 12"
+  },
+  {
+    "file": "dinosaur-13.png",
+    "name": "Dinosaur 13"
+  },
+  {
+    "file": "dinosaur-14.png",
+    "name": "Dinosaur 14"
+  },
+  {
+    "file": "dinosaur-15.png",
+    "name": "Dinosaur 15"
+  },
+  {
+    "file": "dinosaur-16.png",
+    "name": "Dinosaur 16"
+  },
+  {
+    "file": "dinosaur-17.png",
+    "name": "Dinosaur 17"
+  },
+  {
+    "file": "dinosaur-18.png",
+    "name": "Dinosaur 18"
+  },
+  {
+    "file": "dinosaur-19.png",
+    "name": "Dinosaur 19"
+  },
+  {
+    "file": "dinosaur-20.png",
+    "name": "Dinosaur 20"
+  },
+  {
+    "file": "dinosaur-21.png",
+    "name": "Dinosaur 21"
+  },
+  {
+    "file": "dinosaur-22.png",
+    "name": "Dinosaur 22"
+  },
+  {
+    "file": "dinosaur-23.png",
+    "name": "Dinosaur 23"
+  },
+  {
+    "file": "dinosaur-24.png",
+    "name": "Dinosaur 24"
+  },
+  {
+    "file": "dinosaur-25.png",
+    "name": "Dinosaur 25"
+  },
+  {
+    "file": "dinosaur-26.png",
+    "name": "Dinosaur 26"
+  },
+  {
+    "file": "dinosaur-27.png",
+    "name": "Dinosaur 27"
+  },
+  {
+    "file": "dinosaur-28.png",
+    "name": "Dinosaur 28"
+  },
+  {
+    "file": "dinosaur-29.png",
+    "name": "Dinosaur 29"
+  },
+  {
+    "file": "dinosaur-30.png",
+    "name": "Dinosaur 30"
+  },
+  {
     "file": "example-hot-air-balloon.png",
     "name": "Example hot air balloon"
   },
@@ -122,6 +482,126 @@
   {
     "file": "pose-30.png",
     "name": "Pose 30"
+  },
+  {
+    "file": "princess-01.png",
+    "name": "Princess 01"
+  },
+  {
+    "file": "princess-02.png",
+    "name": "Princess 02"
+  },
+  {
+    "file": "princess-03.png",
+    "name": "Princess 03"
+  },
+  {
+    "file": "princess-04.png",
+    "name": "Princess 04"
+  },
+  {
+    "file": "princess-05.png",
+    "name": "Princess 05"
+  },
+  {
+    "file": "princess-06.png",
+    "name": "Princess 06"
+  },
+  {
+    "file": "princess-07.png",
+    "name": "Princess 07"
+  },
+  {
+    "file": "princess-08.png",
+    "name": "Princess 08"
+  },
+  {
+    "file": "princess-09.png",
+    "name": "Princess 09"
+  },
+  {
+    "file": "princess-10.png",
+    "name": "Princess 10"
+  },
+  {
+    "file": "princess-11.png",
+    "name": "Princess 11"
+  },
+  {
+    "file": "princess-12.png",
+    "name": "Princess 12"
+  },
+  {
+    "file": "princess-13.png",
+    "name": "Princess 13"
+  },
+  {
+    "file": "princess-14.png",
+    "name": "Princess 14"
+  },
+  {
+    "file": "princess-15.png",
+    "name": "Princess 15"
+  },
+  {
+    "file": "princess-16.png",
+    "name": "Princess 16"
+  },
+  {
+    "file": "princess-17.png",
+    "name": "Princess 17"
+  },
+  {
+    "file": "princess-18.png",
+    "name": "Princess 18"
+  },
+  {
+    "file": "princess-19.png",
+    "name": "Princess 19"
+  },
+  {
+    "file": "princess-20.png",
+    "name": "Princess 20"
+  },
+  {
+    "file": "princess-21.png",
+    "name": "Princess 21"
+  },
+  {
+    "file": "princess-22.png",
+    "name": "Princess 22"
+  },
+  {
+    "file": "princess-23.png",
+    "name": "Princess 23"
+  },
+  {
+    "file": "princess-24.png",
+    "name": "Princess 24"
+  },
+  {
+    "file": "princess-25.png",
+    "name": "Princess 25"
+  },
+  {
+    "file": "princess-26.png",
+    "name": "Princess 26"
+  },
+  {
+    "file": "princess-27.png",
+    "name": "Princess 27"
+  },
+  {
+    "file": "princess-28.png",
+    "name": "Princess 28"
+  },
+  {
+    "file": "princess-29.png",
+    "name": "Princess 29"
+  },
+  {
+    "file": "princess-30.png",
+    "name": "Princess 30"
   },
   {
     "file": "torso-01.png",
