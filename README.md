@@ -226,6 +226,28 @@ Menu → **📶 Use without wifi** shows what has been saved and how much room i
 is taking. There is a button there to fetch the pictures immediately rather
 than waiting, and one to remove them again.
 
+### The address must end in a slash
+
+Use this, with the final `/`:
+
+    https://bwoodmanw.github.io/playbox/
+
+Without it, GitHub Pages answers `https://bwoodmanw.github.io/playbox` with a
+301 redirect to the slashed version. That redirect needs the network, and the
+unslashed address also sits *outside* the saved copy's scope, so the browser
+never even asks Playbox - it just reports no connection. This is the single
+most likely reason offline appears not to work.
+
+Check the allowed-sites entry at <https://parents.amazon.com> and any bookmark
+or home-screen shortcut on the tablet.
+
+### Something is wrong - what do I check?
+
+Menu -> **📶 Use without wifi** -> **Check**, while on wifi. It prints a tick
+or a cross against each thing offline needs, plus the exact address the tablet
+is on, and names the one action that follows. Photograph it if you want help
+reading it.
+
 ### Will this work under Amazon Kids?
 
 Silk is Chromium underneath and supports service workers, so it should. What
