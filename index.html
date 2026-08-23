@@ -1991,6 +1991,8 @@ function buildSizes(wrapId){
    ------------------------------------------------------------------ */
 var EXTRA = null;
 var extraLoading = false;
+function getExtraCount(){ return EXTRA ? EXTRA.length : 0; }
+
 function loadExtraTraces(done){
   if(EXTRA !== null){ done(EXTRA); return; }
   if(extraLoading){ setTimeout(function(){ loadExtraTraces(done); }, 150); return; }
@@ -4598,10 +4600,127 @@ var MENU = [
   { act:'backup', emoji:'\uD83D\uDCBE', name:'Back up' },
   { act:'restore',emoji:'\uD83D\uDCC2', name:'Restore' },
   { group:'Other' },
+  { act:'offline',emoji:'\uD83D\uDCF6', name:'Use without wifi' },
   { act:'full',   emoji:'\u26F6', name:'Full screen' },
   { act:'help',   emoji:'\u2753', name:'How to use Playbox' }
 ];
 
+/* ---------- keeping Playbox on the tablet ---------- */
+
+/* Ask the worker something and get one reply. Nothing here is essential, so
+   every path resolves rather than rejects - a tablet that will not talk to us
+   should show 'not saved yet', not a broken screen. */
+function swAsk(msg, onReply, onProgress){
+  var reg = navigator.serviceWorker && navigator.serviceWorker.controller;
+  if(!reg){ onReply(null); return; }
+  var ch = new MessageChannel();
+  ch.port1.onmessage = function(e){
+    var d = e.data || {};
+    if(d.state === 'progress'){ if(onProgress) onProgress(d); return; }
+    onReply(d);
+  };
+  try{ navigator.serviceWorker.controller.postMessage(msg, [ch.port2]); }
+  catch(err){ onReply(null); }
+}
+
+function prettyBytes(n){
+  if(!n && n !== 0) return '';
+  if(n < 1024*1024) return Math.round(n/1024) + ' KB';
+  return (n/(1024*1024)).toFixed(n < 10*1024*1024 ? 1 : 0) + ' MB';
+}
+
+function offlineSupported(){
+  return !!(navigator.serviceWorker && window.caches && window.isSecureContext !== false);
+}
+
+function openOffline(){
+  var total = (getExtraCount() || 0);
+
+  function paint(body, row){
+    showModal('<h2>\uD83D\uDCF6 Use without wifi</h2>' + body +
+      '<div class="sheetrow">' + row + '</div>');
+    if($('offDone')) $('offDone').onclick = closeModal;
+  }
+
+  if(!offlineSupported()){
+    paint('<p>This browser cannot keep Playbox on the tablet, so it will need ' +
+          'wifi each time. Everything you have made is still saved on the ' +
+          'device and will be waiting when you come back.</p>',
+          '<button class="go" id="offDone">Close</button>');
+    return;
+  }
+
+  var ready = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+
+  swAsk({ cmd:'art-status' }, function(d){
+    var have = (d && d.cached) || 0;
+    var est = '';
+    function draw(){
+      var status = ready
+        ? '<p><b>Playbox itself: saved.</b> It will open with no internet.</p>'
+        : '<p><b>Nearly there.</b> Close Playbox and open it once more, then ' +
+          'come back here - the tablet finishes saving the app in the background.</p>';
+      var pics = total
+        ? '<p>Pictures to trace: <b>' + have + ' of ' + total + '</b> saved.' +
+          (have >= total ? ' All of them are ready.' : '') + '</p>'
+        : '';
+      var note = '<p style="color:#5b5175;font-size:14px;line-height:1.6">' +
+        'Playbox saves these by itself a few seconds after it opens, so this ' +
+        'usually needs no help. All 181 pictures come to about 2 MB.' +
+        est + '</p>';
+      var row = (have >= total && total)
+        ? '<button id="offDrop">Remove pictures</button>' +
+          '<button class="go" id="offDone">Close</button>'
+        : '<button id="offDone">Close</button>' +
+          '<button class="go" id="offGet">Save them now</button>';
+      paint(status + pics + note, row);
+      if($('offGet')) $('offGet').onclick = saveAll;
+      if($('offDrop')) $('offDrop').onclick = function(){
+        swAsk({ cmd:'drop-art' }, function(){ closeModal(); toast('Pictures removed'); });
+      };
+    }
+
+    if(navigator.storage && navigator.storage.estimate){
+      navigator.storage.estimate().then(function(e){
+        if(e && e.usage) est = ' Using about ' + prettyBytes(e.usage) + ' on the tablet.';
+        draw();
+      })['catch'](draw);
+    } else draw();
+  });
+
+  function saveAll(){
+    loadExtraTraces(function(list){
+      if(!list || !list.length){
+        paint('<p>There are no pictures to save yet. Open Trace once while ' +
+              'you have wifi, then come back.</p>',
+              '<button class="go" id="offDone">Close</button>');
+        return;
+      }
+      var urls = list.map(function(e){ return 'traces/' + encodeURIComponent(e.file); });
+      var n = urls.length;
+      function bar(done, failed){
+        var pct = Math.round(done / n * 100);
+        paint('<p>Saving pictures to the tablet\u2026 <b>' + done + ' of ' + n + '</b></p>' +
+              '<div style="height:18px;border-radius:9px;background:#eef3ff;overflow:hidden">' +
+              '<div style="height:100%;width:' + pct + '%;background:#22b573"></div></div>' +
+              (failed ? '<p style="color:#c02a4f;font-size:14px">' + failed +
+                        ' could not be fetched \u2014 try again on a better connection.</p>' : '') +
+              '<p style="color:#5b5175;font-size:14px">Keep this screen open until it finishes.</p>',
+              '');
+      }
+      bar(0, 0);
+      swAsk({ cmd:'precache-art', urls:urls }, function(d){
+        var failed = (d && d.failed) || 0;
+        paint(failed
+          ? '<p><b>Saved ' + ((d && d.done) || 0) + ' of ' + n + '.</b> ' + failed +
+            ' did not arrive. Run it again on wifi to pick up the rest.</p>'
+          : '<p><b>All done.</b> Playbox and every picture are on the tablet now. ' +
+            'Turn the wifi off and try it \u2014 it should open just the same.</p>',
+          '<button class="go" id="offDone">Close</button>');
+      }, function(p){ bar(p.done, p.failed); });
+    });
+  }
+}
 function openDrawer(){
   var p = $('drawerPanel');
   p.innerHTML = '<h3>Playbox</h3>';
@@ -4623,6 +4742,7 @@ function openDrawer(){
       if(m.act === 'newpic'){ go('paint'); setTimeout(newPicture, 200); return; }
       if(m.act === 'backup'){ exportBackup(); return; }
       if(m.act === 'restore'){ $('bakIn').click(); return; }
+      if(m.act === 'offline'){ openOffline(); return; }
       if(m.act === 'full'){ toggleFullscreen(); return; }
       if(m.act === 'help'){ showHelp(); return; }
     });
@@ -4727,6 +4847,51 @@ requestPersistence();
 go('home');
 
 /* exposed only so the page can be smoke-tested from the console */
+/* Attached on 'load', never in the markup. The whole app is one request by
+   design - the Kids allowlist is the only way onto this tablet and a blocked
+   asset would break it - so the worker and the manifest wait until the page
+   is already up. Once the worker is running the count drops to zero. */
+window.addEventListener('load', function(){
+  try{
+    var l = document.createElement('link');
+    l.rel = 'manifest'; l.href = 'manifest.webmanifest';
+    document.head.appendChild(l);
+  }catch(e){}
+
+  /* ?fresh=1 is the repair route for a tablet with no developer tools: the
+     worker throws away every cache and hands back a clean copy. Re-registering
+     here would undo that in the same breath, so this one load stays plain.
+     The next ordinary launch turns offline back on by itself. */
+  if(location.search.indexOf('fresh=1') !== -1) return;
+
+  if(!('serviceWorker' in navigator)) return;
+  try{
+    navigator.serviceWorker.register('sw.js').then(function(){
+      /* All 181 trace pictures come to 2MB, so there is no sense making a
+         grown-up hunt through a menu to fetch them. Wait until the app is
+         up and idle, then pull them quietly. Nothing here is awaited and
+         nothing shows a spinner - if it fails the app is unaffected. */
+      setTimeout(saveArtQuietly, 4000);
+    })['catch'](function(){
+      /* Older Silk, a private window, or a browser that simply says no.
+         Playbox works exactly as before; it just needs wifi each time. */
+    });
+  }catch(e){}
+});
+
+function saveArtQuietly(){
+  if(!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+  /* Respect a data saver or a connection the tablet already thinks is bad. */
+  var c = navigator.connection;
+  if(c && (c.saveData || c.effectiveType === 'slow-2g' || c.effectiveType === '2g')) return;
+  loadExtraTraces(function(list){
+    if(!list || !list.length) return;
+    var urls = list.map(function(e){ return 'traces/' + encodeURIComponent(e.file); });
+    try{ navigator.serviceWorker.controller.postMessage({ cmd:'precache-art', urls:urls }); }
+    catch(e){}
+  });
+}
+
 window.__playbox = { S:S, SOUNDS:SOUNDS, TOOLS:TOOLS, SHAPES:SHAPES,
                      PRESETS:PRESETS, SHAPE_CATS:SHAPE_CATS, drawShape:drawShape, GAL_KINDS:GAL_KINDS, ENVIRONMENTS:ENVIRONMENTS,
                      ENV_CATS:ENV_CATS, renderPaper:renderPaper, renderEnv:renderEnv, flatten:flatten,
@@ -4737,7 +4902,8 @@ window.__playbox = { S:S, SOUNDS:SOUNDS, TOOLS:TOOLS, SHAPES:SHAPES,
                      wipSave:wipSave, canvasPNG:canvasPNG, go:go,
                      store:store, blankScene:blankScene, extraGroups:extraGroups, artHasInk:artHasInk,
                      getSel:function(){ return SEL; }, getDC:function(){ return DC; },
-                     pickEraser:pickEraser, pickAt:pickAt, doUndo:doUndo, DPRof:function(){ return DPR; } };
+                     pickEraser:pickEraser, pickAt:pickAt, doUndo:doUndo, DPRof:function(){ return DPR; },
+                     openOffline:openOffline, offlineSupported:offlineSupported, swAsk:swAsk };
 
 })();
 </script>

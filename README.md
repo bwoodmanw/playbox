@@ -212,6 +212,64 @@ home screen like an app.
 
 ---
 
+## Using it with no wifi
+
+Playbox installs a service worker (`sw.js`) the first time it opens. After
+that it loads from the tablet rather than the network, so it works on a plane,
+in a car, or anywhere the wifi has given up.
+
+**Nobody has to do anything.** About four seconds after the app opens, it
+quietly downloads all 181 trace pictures in the background - roughly 2 MB, or
+2.5 MB once the app itself is counted. From then on everything works offline.
+
+Menu → **📶 Use without wifi** shows what has been saved and how much room it
+is taking. There is a button there to fetch the pictures immediately rather
+than waiting, and one to remove them again.
+
+### Will this work under Amazon Kids?
+
+Silk is Chromium underneath and supports service workers, so it should. What
+has **not** been tested on a real device is whether the Kids profile lets a
+page register one, and whether the Kids browser will open an allowlisted site
+at all with no connection - it may refuse before Playbox gets a say.
+
+To find out, on the tablet:
+
+1. Open Playbox in the child's profile and wait about ten seconds.
+2. Check Menu → **📶 Use without wifi** says *Playbox itself: saved* and
+   *181 of 181*.
+3. Turn on aeroplane mode.
+4. Close Playbox completely and open it again.
+
+If it opens and the trace pictures are all there, it works. If the browser
+refuses to open the page at all, that is Amazon Kids blocking on connectivity
+and no amount of caching will get round it - in that case use **Add to Home
+screen** from the adult profile instead, where it definitely works.
+
+### If a bad copy ever gets stuck
+
+Open the URL with `?fresh=1` on the end:
+
+    https://bwoodmanw.github.io/playbox/?fresh=1
+
+That throws away every cache, unregisters the worker, and hands back a clean
+copy from the network. The next ordinary launch turns offline back on. Saved
+drawings are untouched - they live in localStorage, not the cache.
+
+### What this means when you change the app
+
+Updates arrive **one launch late**. The worker serves the copy it already has
+and fetches the new one in the background, so a push shows up the second time
+the app is opened, not the first. That is deliberate: it is what makes the app
+start instantly and work with no connection.
+
+If a change ever must not be served stale, bump `VERSION` at the top of
+`sw.js`. That throws away the cached app - but not the pictures, which live in
+a separate unversioned cache precisely so a code change does not cost a 2 MB
+re-download.
+
+---
+
 ## Notes for whoever edits this next
 
 - One file on purpose. Open `index.html` in any editor; there is no build.
