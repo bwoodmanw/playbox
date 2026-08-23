@@ -4879,17 +4879,42 @@ window.addEventListener('load', function(){
   }catch(e){}
 });
 
+var artSaveStarted = false;
+var artDiag = [];
 function saveArtQuietly(){
-  if(!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
-  /* Respect a data saver or a connection the tablet already thinks is bad. */
+  artDiag.push('called');
+  if(!navigator.serviceWorker){ artDiag.push('no sw'); return; }
+  /* Respect an explicit data saver, and nothing else. effectiveType was in
+     this check too and it silently killed the download every single time:
+     Chromium derives it from observed round trips, so a few seconds into a
+     fresh page it still reads '2g' regardless of the real connection. A
+     guess about link quality is not worth breaking the feature over - the
+     whole payload is 2MB, and a failed fetch costs nothing but a retry on
+     the next launch. */
   var c = navigator.connection;
-  if(c && (c.saveData || c.effectiveType === 'slow-2g' || c.effectiveType === '2g')) return;
-  loadExtraTraces(function(list){
-    if(!list || !list.length) return;
-    var urls = list.map(function(e){ return 'traces/' + encodeURIComponent(e.file); });
-    try{ navigator.serviceWorker.controller.postMessage({ cmd:'precache-art', urls:urls }); }
-    catch(e){}
-  });
+  if(c && c.saveData){ artDiag.push('data saver on'); return; }
+
+  function send(){
+    if(artSaveStarted){ artDiag.push('already started'); return; }
+    if(!navigator.serviceWorker.controller){ artDiag.push('no controller'); return; }
+    artDiag.push('sending');
+    artSaveStarted = true;
+    loadExtraTraces(function(list){
+      if(!list || !list.length){ artDiag.push('manifest empty'); artSaveStarted = false; return; }
+      var urls = list.map(function(e){ return 'traces/' + encodeURIComponent(e.file); });
+      try{ navigator.serviceWorker.controller.postMessage({ cmd:'precache-art', urls:urls }); }
+      catch(e){}
+    });
+  }
+
+  if(navigator.serviceWorker.controller){ send(); return; }
+
+  /* First ever visit: registering, installing, activating and claiming the
+     page all take a moment, so there is no controller to talk to yet. Bailing
+     out here is what made a brand new tablet report '0 of 181 saved' until it
+     was opened a second time. Wait for the worker instead. */
+  try{ navigator.serviceWorker.addEventListener('controllerchange', send); }catch(e){}
+  try{ navigator.serviceWorker.ready.then(function(){ setTimeout(send, 600); }); }catch(e){}
 }
 
 window.__playbox = { S:S, SOUNDS:SOUNDS, TOOLS:TOOLS, SHAPES:SHAPES,
@@ -4903,7 +4928,8 @@ window.__playbox = { S:S, SOUNDS:SOUNDS, TOOLS:TOOLS, SHAPES:SHAPES,
                      store:store, blankScene:blankScene, extraGroups:extraGroups, artHasInk:artHasInk,
                      getSel:function(){ return SEL; }, getDC:function(){ return DC; },
                      pickEraser:pickEraser, pickAt:pickAt, doUndo:doUndo, DPRof:function(){ return DPR; },
-                     openOffline:openOffline, offlineSupported:offlineSupported, swAsk:swAsk };
+                     openOffline:openOffline, offlineSupported:offlineSupported, swAsk:swAsk,
+                     saveArtQuietly:saveArtQuietly, artDiag:function(){ return artDiag; } };
 
 })();
 </script>
