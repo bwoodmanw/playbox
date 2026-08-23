@@ -1,14 +1,19 @@
 /* Playbox offline cache.
  *
- * The tablet this is built for reaches Playbox through the Amazon Kids
- * allowlist, so there is no app to install and no files on the device. A
- * service worker is the only way to make it survive a car journey.
+ * Playbox is delivered as a URL, not an app, so without this there is nothing
+ * on the device and closing the browser out of range leaves you with nothing.
+ *
+ * Tested on the Fire tablet: this works in Silk from the adult profile, where
+ * aeroplane mode opens Playbox exactly as normal. It does NOT rescue the
+ * Amazon Kids browser, which refuses to open any page with no connection
+ * before a service worker is ever consulted. The offline route there is a
+ * home-screen shortcut from the adult profile.
  *
  * Two caches, deliberately:
  *
- *   SHELL - index.html and the trace manifest. Versioned, so bumping VERSION
- *           throws the old app away and pulls a fresh one.
- *   ART   - the trace pictures. NOT versioned, because 22MB of drawings should
+ *   SHELL - index.html, the manifest, the icons, the trace list. Versioned, so
+ *           bumping VERSION throws the old app away and pulls a fresh one.
+ *   ART   - the trace pictures. NOT versioned, because 2MB of drawings should
  *           not be re-downloaded every time a button moves in the app. The
  *           filenames never change once published, so a cached one is always
  *           correct.
@@ -18,7 +23,7 @@
  * app updates itself one launch later without anyone thinking about it.
  */
 
-var VERSION = 'v1';
+var VERSION = 'v2';   /* v2: icons added to the shell */
 var SHELL   = 'playbox-shell-' + VERSION;
 var ART     = 'playbox-art';
 
@@ -28,7 +33,12 @@ var SHELL_URLS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './traces/traces.json'
+  './traces/traces.json',
+  /* The home-screen shortcut is how this gets used offline on the Fire tablet,
+     so the things that shortcut is made of belong in the offline copy too. */
+  './icon-192.png',
+  './icon-512.png',
+  './icon-maskable-512.png'
 ];
 
 self.addEventListener('install', function(e){

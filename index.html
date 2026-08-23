@@ -7,6 +7,12 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="description" content="Playbox - a free drawing, sticker, music and animation playground for kids.">
+<!-- In the markup, not attached by script. The home-screen shortcut is how
+     Playbox gets used offline on the Fire tablet, and it takes its name, icon
+     and start URL from here - older Silk may never look for a manifest that
+     appears after load. Costs one same-origin request on the already-allowed
+     path, which is worth it for the thing that makes offline work at all. -->
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236b3fd6'/%3E%3Ccircle cx='22' cy='24' r='8' fill='%23ff4d8d'/%3E%3Ccircle cx='42' cy='24' r='8' fill='%23ffd11a'/%3E%3Ccircle cx='32' cy='43' r='8' fill='%2322b573'/%3E%3C/svg%3E">
 <title>Playbox</title>
 <style>
@@ -4689,7 +4695,7 @@ function offlineReportHtml(r){
        so reporting that on its own reads as a contradiction */
     [tick(r.controlled && r.regs > 0), 'Installed copy in use',
        (r.controlled && r.regs > 0) ? 'yes' : 'not yet - reopen once'],
-    [tick(r.shell >= 3), 'App saved',              r.shell + ' files'],
+    [tick(r.shell >= 5), 'App saved',              r.shell + ' files'],
     [tick(r.art >= 181), 'Pictures saved',         r.art + ' of 181'],
     [tick(r.trailingSlash), 'Address ends in /',   r.trailingSlash ? 'yes' : 'NO - add a / to the end']
   ];
@@ -4958,11 +4964,6 @@ go('home');
    asset would break it - so the worker and the manifest wait until the page
    is already up. Once the worker is running the count drops to zero. */
 window.addEventListener('load', function(){
-  try{
-    var l = document.createElement('link');
-    l.rel = 'manifest'; l.href = 'manifest.webmanifest';
-    document.head.appendChild(l);
-  }catch(e){}
 
   /* ?fresh=1 is the repair route for a tablet with no developer tools: the
      worker throws away every cache and hands back a clean copy. Re-registering

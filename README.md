@@ -253,25 +253,36 @@ or a cross against each thing offline needs, plus the exact address the tablet
 is on, and names the one action that follows. Photograph it if you want help
 reading it.
 
-### Amazon Kids: tested, and the answer is half good
+### Amazon Kids: what works and what does not
 
 Tested on the Fire tablet, 23 Aug 2026.
 
-**Service workers do work in the Kids browser.** The offline check came back
-green on every line: installed, activated, controlling the page, all 181
-pictures cached, 2.6 MB stored, address correctly slashed.
+| | Offline? |
+|---|---|
+| Adult profile, Silk | **Yes** - aeroplane mode opens it normally |
+| Adult profile, home-screen shortcut | **Yes** |
+| Amazon Kids browser | **No** - "no connection found" |
 
-**Aeroplane mode still gives "no connection found".** So the Kids browser is
-refusing to open the page before Playbox is consulted - almost certainly its
-own connectivity check, which it plausibly needs for parental time limits and
-allowlist sync. Nothing in a web page can get round a browser that will not
-navigate to it.
+Service workers themselves work fine in the Kids browser: the offline check
+came back green on every line, 181 of 181 pictures cached, 2.6 MB stored. The
+Kids browser simply refuses to open any page with no connection, before a
+service worker is ever consulted - almost certainly its own connectivity
+check, which it plausibly needs for time limits and allowlist sync. Nothing in
+a web page can argue with a browser that will not navigate to it.
 
-The caching is not wasted: it still makes the app start instantly and survive
-a flaky connection. It just cannot rescue a hard offline in the Kids browser.
+**So: for car and plane journeys, use a home-screen shortcut.** From the adult
+profile, open Playbox in Silk, then the Silk menu -> **Add to Home screen**.
+It launches straight into the app and works in aeroplane mode. The trade-off
+is that it sits outside the Kids profile, so the parental controls do not
+apply while it is being used that way.
 
-To use it genuinely offline, open it from the **adult profile** in Silk and
-use **Add to Home screen**.
+Keep the Kids-profile web entry for normal use at home. The caching still
+earns its place there - instant starts and immunity to a flaky connection.
+
+The manifest is a real `<link>` in the markup rather than attached by script,
+because the shortcut takes its name, icon and start URL from it, and older
+Silk may not notice a manifest that appears after load. Chromium fetches it
+lazily, so this still costs nothing at page load.
 
 ### If a bad copy ever gets stuck
 
