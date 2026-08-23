@@ -894,7 +894,7 @@ var SHAPES = [
         if(i===0) g.moveTo(px,py); else g.lineTo(px,py);
       }
       g.stroke(); }},
-  { id:'spiral', name:'Spiral', emoji:'\uD83C\uDF00', cat:'line', draw:function(g,q){
+  { id:'spiral', detail:true, name:'Spiral', emoji:'\uD83C\uDF00', cat:'line', draw:function(g,q){
       var r=Math.max(4,Math.min(q.w,q.h)/2);
       g.beginPath();
       for(var i=0;i<=180;i++){
@@ -953,7 +953,7 @@ var SHAPES = [
       g.closePath(); done(g,q); }},
 
   /* ---- faces ---- */
-  { id:'eye', name:'Eye', emoji:'\uD83D\uDC41\uFE0F', cat:'face', draw:function(g,q){
+  { id:'eye', detail:true, name:'Eye', emoji:'\uD83D\uDC41\uFE0F', cat:'face', draw:function(g,q){
       var rx=Math.max(4,q.w/2), ry=Math.max(3,q.h/2);
       g.beginPath();
       g.moveTo(q.cx-rx,q.cy);
@@ -962,7 +962,7 @@ var SHAPES = [
       g.stroke();
       g.beginPath(); ellipse(g,q.cx,q.cy,rx*0.42,ry*0.85); g.stroke();
       g.beginPath(); g.arc(q.cx,q.cy,Math.max(1,rx*0.19),0,Math.PI*2); g.fill(); }},
-  { id:'eyebig', name:'Big eye', emoji:'\uD83D\uDC40', cat:'face', draw:function(g,q){
+  { id:'eyebig', detail:true, name:'Big eye', emoji:'\uD83D\uDC40', cat:'face', draw:function(g,q){
       var rx=Math.max(4,q.w/2), ry=Math.max(3,q.h/2);
       g.beginPath();
       g.moveTo(q.cx-rx,q.cy);
@@ -978,7 +978,7 @@ var SHAPES = [
       g.beginPath(); g.moveTo(q.cx-rx,q.cy);
       g.bezierCurveTo(q.cx-rx*0.6,q.cy-ry*1.7, q.cx+rx*0.6,q.cy-ry*1.7, q.cx+rx,q.cy);
       g.stroke(); g.lineWidth=lw; }},
-  { id:'eyeshut', name:'Closed eye', emoji:'\uD83D\uDE0C', cat:'face', draw:function(g,q){
+  { id:'eyeshut', detail:true, name:'Closed eye', emoji:'\uD83D\uDE0C', cat:'face', draw:function(g,q){
       var rx=Math.max(4,q.w/2), ry=Math.max(3,q.h/2);
       g.beginPath(); g.moveTo(q.cx-rx,q.cy-ry*0.3);
       g.quadraticCurveTo(q.cx,q.cy+ry*1.1,q.cx+rx,q.cy-ry*0.3); g.stroke();
@@ -992,13 +992,13 @@ var SHAPES = [
       g.beginPath(); g.moveTo(q.x,q.y+q.h);
       g.quadraticCurveTo(q.cx,q.y-q.h*0.3,q.x+q.w,q.y+q.h*0.55); g.stroke();
       g.lineWidth=lw; }},
-  { id:'nose', name:'Nose', emoji:'\uD83D\uDC43', cat:'face', draw:function(g,q){
+  { id:'nose', detail:true, name:'Nose', emoji:'\uD83D\uDC43', cat:'face', draw:function(g,q){
       g.beginPath();
       g.moveTo(q.cx-q.w*0.12,q.y);
       g.quadraticCurveTo(q.cx-q.w*0.28,q.y+q.h*0.75,q.cx,q.y+q.h*0.8);
       g.quadraticCurveTo(q.cx+q.w*0.2,q.y+q.h*0.82,q.cx+q.w*0.22,q.y+q.h*0.55);
       g.stroke(); }},
-  { id:'nosebutton', name:'Button nose', emoji:'\u25E1', cat:'face', draw:function(g,q){
+  { id:'nosebutton', detail:true, name:'Button nose', emoji:'\u25E1', cat:'face', draw:function(g,q){
       g.beginPath();
       g.moveTo(q.x,q.y+q.h*0.2);
       g.quadraticCurveTo(q.cx,q.y+q.h*1.15,q.x+q.w,q.y+q.h*0.2); g.stroke();
@@ -1012,7 +1012,7 @@ var SHAPES = [
   { id:'frown', name:'Frown', emoji:'\u2639\uFE0F', cat:'face', draw:function(g,q){
       g.beginPath(); g.moveTo(q.x,q.y+q.h);
       g.quadraticCurveTo(q.cx,q.y-q.h*0.6,q.x+q.w,q.y+q.h); g.stroke(); }},
-  { id:'grin', name:'Grin', emoji:'\uD83D\uDE01', cat:'face', draw:function(g,q){
+  { id:'grin', detail:true, name:'Grin', emoji:'\uD83D\uDE01', cat:'face', draw:function(g,q){
       g.beginPath(); g.moveTo(q.x,q.y);
       g.quadraticCurveTo(q.cx,q.y+q.h*1.7,q.x+q.w,q.y);
       g.closePath(); g.stroke();
@@ -1024,7 +1024,7 @@ var SHAPES = [
       } }},
   { id:'mouthopen', name:'Oh!', emoji:'\uD83D\uDE2E', cat:'face', draw:function(g,q){
       g.beginPath(); ellipse(g,q.cx,q.cy,Math.max(3,q.w/2),Math.max(3,q.h/2)); done(g,q); }},
-  { id:'ear', name:'Ear', emoji:'👂', cat:'face', draw:function(g,q){
+  { id:'ear', detail:true, name:'Ear', emoji:'👂', cat:'face', draw:function(g,q){
       var x=q.x, y=q.y, w=q.w, h=q.h;
       /* outer rim, open towards the face on the right */
       g.beginPath();
@@ -1043,7 +1043,7 @@ var SHAPES = [
       g.quadraticCurveTo(x+w*0.70, y+h*0.82, x+w*0.74, y+h*0.70);
       g.stroke(); }},
   /* ---- fun ---- */
-  { id:'cloud', name:'Cloud', emoji:'☁️', cat:'fun', draw:function(g,q){
+  { id:'cloud', detail:true, name:'Cloud', emoji:'☁️', cat:'fun', draw:function(g,q){
       /* one silhouette, not four stroked circles - those showed their
          overlapping edges and read as a scribble */
       var x=q.x, y=q.y, w=q.w, h=q.h, by=y+h*0.88;
@@ -1053,7 +1053,7 @@ var SHAPES = [
       g.bezierCurveTo(x+w*0.22, y+h*0.02,  x+w*0.60, y-h*0.02, x+w*0.64, y+h*0.34);
       g.bezierCurveTo(x+w*0.86, y+h*0.18,  x+w*1.04, y+h*0.52, x+w*0.84, by);
       g.closePath(); done(g,q); }},
-  { id:'bubble', name:'Speech', emoji:'\uD83D\uDCAC', cat:'fun', draw:function(g,q){
+  { id:'bubble', detail:true, name:'Speech', emoji:'\uD83D\uDCAC', cat:'fun', draw:function(g,q){
       var r=Math.min(q.w,q.h)*0.22;
       var hh=Math.max(6,q.h*0.78);
       g.beginPath();
@@ -1072,7 +1072,7 @@ var SHAPES = [
       g.lineTo(q.x+q.w*0.8,q.cy-q.h*0.08);
       g.lineTo(q.cx+q.w*0.02,q.cy-q.h*0.08);
       g.closePath(); done(g,q); }},
-  { id:'flower', name:'Flower', emoji:'\uD83C\uDF3C', cat:'fun', draw:function(g,q){
+  { id:'flower', detail:true, name:'Flower', emoji:'\uD83C\uDF3C', cat:'fun', draw:function(g,q){
       var r=Math.max(4,Math.min(q.w,q.h)/2);
       for(var i=0;i<6;i++){
         var ang=(Math.PI/3)*i;
@@ -1088,7 +1088,7 @@ var SHAPES = [
       g.quadraticCurveTo(q.x+q.w,q.y+q.h, q.x,q.y+q.h);
       done(g,q);
       g.beginPath(); g.moveTo(q.x,q.y+q.h); g.lineTo(q.x+q.w,q.y); g.stroke(); }},
-  { id:'sun', name:'Sun', emoji:'\u2600\uFE0F', cat:'fun', draw:function(g,q){
+  { id:'sun', detail:true, name:'Sun', emoji:'\u2600\uFE0F', cat:'fun', draw:function(g,q){
       var r=Math.max(4,Math.min(q.w,q.h)/2);
       g.beginPath(); g.arc(q.cx,q.cy,r*0.52,0,Math.PI*2); done(g,q);
       g.beginPath();
@@ -1114,12 +1114,19 @@ function ellipse(g, cx, cy, rx, ry){
 function drawShape(g, a, b, kind, fill, color, lw){
   var x = Math.min(a.x,b.x), y = Math.min(a.y,b.y);
   var w = Math.abs(b.x-a.x), h = Math.abs(b.y-a.y);
+  var def = shapeById(kind);
+  /* A shape's outline used to be drawn at the raw brush width, so a fat
+     brush turned a small eye into a solid blob - the strokes were wider
+     than the gaps between them. Cap the stroke against the shape's own
+     size, tighter for the fiddly ones. */
+  var span = Math.min(w, h);
+  var cap = span * (def.detail ? 0.075 : 0.16);
+  var stroke = Math.max(1.5, Math.min(Math.max(2, lw), cap || 2));
   var q = { x:x, y:y, w:w, h:h, cx:x+w/2, cy:y+h/2,
-            a:a, b:b, fill:fill, lw:Math.max(2,lw) };
+            a:a, b:b, fill:fill, lw:stroke };
   g.save();
   g.strokeStyle = color; g.fillStyle = color;
   g.lineWidth = q.lw; g.lineCap = 'round'; g.lineJoin = 'round';
-  var def = shapeById(kind);
   try{ def.draw(g, q); }catch(e){}
   g.restore();
 }
@@ -1535,7 +1542,7 @@ function buildShapeBar(){
   bar.appendChild(lbl);
 
   if(t === 'shapes'){
-    lbl.textContent = 'Shape';
+    lbl.textContent = 'Drag to draw';
     if(!S.shapeCat) S.shapeCat = shapeById(S.shape).cat || 'line';
     SHAPE_CATS.forEach(function(c){
       subBtn(bar, '<span style="font-size:16px">' + c.emoji + '</span> ' + c.name,
