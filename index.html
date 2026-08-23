@@ -1655,6 +1655,7 @@ function buildRail(railId){
     });
     rail.appendChild(b);
   });
+  syncEraseBtn();
 }
 
 var STAMPS = ['\u2b50','\u2764\uFE0F','\uD83C\uDF08','\u26A1','\uD83C\uDF3B','\uD83E\uDD84',
@@ -2520,10 +2521,35 @@ function enterPaint(){
 $('redoBtn').addEventListener('click', doRedo);
 $('animRedo').addEventListener('click', doRedo);
 
+/* Keep the pinned eraser button lit while the eraser is the chosen tool.
+   It used to toggle, so it needed no state of its own; now that it only ever
+   turns the eraser on, you need to be able to see that it is on. */
+function syncEraseBtn(){
+  var on = (S.tool === 'eraser');
+  ['eraseBtn','animErase'].forEach(function(id){
+    var b = $(id);
+    if(b) b.className = 'act' + (on ? ' sel' : '');
+  });
+}
+
 function pickEraser(){
-  S.tool = (S.tool === 'eraser') ? 'brush' : 'eraser';
+  /* Holding something with the arrow tool? Then the rubber means 'get rid of
+     this'. pickAt pushed an undo step before lifting the pixels, so dropping
+     the selection is undoable like anything else. */
+  if(SEL){
+    SEL = null;
+    clearOverlay();
+    buildShapeBar();
+    afterEdit();
+    toast('Rubbed out \u2014 \u21b6 puts it back');
+    return;
+  }
+  /* Not a toggle any more. The button says eraser, so it picks the eraser -
+     tapping it twice used to hand you the brush back, which is the opposite
+     of what it looks like it does. Pick another tool from the rail to stop. */
+  S.tool = 'eraser';
   buildRail('paintRail'); buildRail('animRail'); buildShapeBar();
-  toast(S.tool === 'eraser' ? 'Eraser' : 'Brush');
+  toast('Eraser');
 }
 $('eraseBtn').addEventListener('click', pickEraser);
 $('animErase').addEventListener('click', pickEraser);
@@ -4709,7 +4735,9 @@ window.__playbox = { S:S, SOUNDS:SOUNDS, TOOLS:TOOLS, SHAPES:SHAPES,
                      loadExtraTraces:loadExtraTraces, keyOutWhite:keyOutWhite,
                      getExtra:function(){ return EXTRA; },
                      wipSave:wipSave, canvasPNG:canvasPNG, go:go,
-                     store:store, blankScene:blankScene, extraGroups:extraGroups, artHasInk:artHasInk };
+                     store:store, blankScene:blankScene, extraGroups:extraGroups, artHasInk:artHasInk,
+                     getSel:function(){ return SEL; }, getDC:function(){ return DC; },
+                     pickEraser:pickEraser, pickAt:pickAt, doUndo:doUndo, DPRof:function(){ return DPR; } };
 
 })();
 </script>
