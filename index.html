@@ -1081,6 +1081,42 @@ function wirePointer(canvasEl){
 wirePointer($('paintCanvas'));
 wirePointer($('animCanvas'));
 
+/* Is there anything drawn on the art layer? Sampled, because a full read of
+   every pixel on a big canvas is wasted work for a yes/no answer. */
+function artHasInk(){
+  if(!DC || !DC.width || !DX) return false;
+  try{
+    var d = DX.getImageData(0, 0, DC.width, DC.height).data;
+    for(var i = 3; i < d.length; i += 40){   /* every tenth pixel */
+      if(d[i] > 10) return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+/* Choosing a trace usually means starting a new picture, but not always -
+   sometimes you want to drop an outline under what you have already drawn. */
+function startTrace(apply){
+  if(!artHasInk()){ apply(); return; }
+  showModal('<h2>Start a new picture?</h2>' +
+    '<p>There is already a drawing on the page.</p>' +
+    '<div class="optgrid">' +
+      '<button id="tfNew"><span class="oe">\uD83D\uDCC4</span>' +
+        '<span class="on2">Start fresh</span>' +
+        '<span class="od">Clear my drawing</span></button>' +
+      '<button id="tfKeep"><span class="oe">\u270F\uFE0F</span>' +
+        '<span class="on2">Keep my drawing</span>' +
+        '<span class="od">Trace goes with it</span></button>' +
+    '</div><div class="sheetrow"><button id="tfNo">Cancel</button></div>');
+  $('tfNew').onclick = function(){
+    closeModal();
+    pushUndo();          /* undo still gets it back */
+    clearBoard();
+    apply();
+  };
+  $('tfKeep').onclick = function(){ closeModal(); apply(); };
+  $('tfNo').onclick = closeModal;
+}
 /* ---------- layers ---------- */
 function traceCtx(){ return TX || DX; }
 
@@ -1129,6 +1165,11 @@ function applyView(){
   if(lbl) lbl.textContent = Math.round(S.zoom * 100) + '%';
   var pb = $('panBtn');
   if(pb) pb.classList.toggle('sel', S.panMode);
+  var fit = $('zoomFit');
+  /* nothing to reset when already fitted, so do not invite the tap */
+  if(fit) fit.disabled = (S.zoom === 1 && S.panX === 0 && S.panY === 0);
+  var zo = $('zoomOut');
+  if(zo) zo.disabled = (S.zoom <= 1);
 }
 
 function setZoom(z, cx, cy){
@@ -2905,13 +2946,15 @@ function openTemplates(){
     html += '<div class="sheetrow"><button id="tplNo">Cancel</button></div>';
     showModal(html);
     bindAll('[data-mine]', function(b){
+      var it = mine[parseInt(b.getAttribute('data-mine'), 10)];
       closeModal();
-      applyMyTrace(mine[parseInt(b.getAttribute('data-mine'), 10)]);
+      startTrace(function(){ applyMyTrace(it); });
     });
     bindAll('[data-eset]', function(b){ S.extraSet = b.getAttribute('data-eset'); render(); });
     bindAll('[data-extra]', function(b){
+      var it = (EXTRA || [])[parseInt(b.getAttribute('data-extra'), 10)];
       closeModal();
-      applyExtraTrace((EXTRA || [])[parseInt(b.getAttribute('data-extra'), 10)]);
+      startTrace(function(){ applyExtraTrace(it); });
     });
     if($('mineDel')) $('mineDel').onclick = function(){
       grownUpGate('Delete every trace you added?', function(){
@@ -2927,13 +2970,17 @@ function openTemplates(){
     bindAll('[data-cat]', function(b){ cat = b.getAttribute('data-cat'); render(); });
     bindAll('[data-paper]', function(b){ paper = b.getAttribute('data-paper'); render(); });
     bindAll('[data-tpl]', function(b){
-      var g = traceCtx();
-      clearTrace();
-      renderTemplate(g, (TC||DC).width, (TC||DC).height, b.getAttribute('data-tpl'), paper);
-      g.setTransform(DPR,0,0,DPR,0,0);
-      g.lineCap='round'; g.lineJoin='round';
-      closeModal(); toast('Ready to colour!');
-      afterEdit();
+      var id = b.getAttribute('data-tpl');
+      closeModal();
+      startTrace(function(){
+        var g = traceCtx();
+        clearTrace();
+        renderTemplate(g, (TC||DC).width, (TC||DC).height, id, paper);
+        g.setTransform(DPR,0,0,DPR,0,0);
+        g.lineCap='round'; g.lineJoin='round';
+        toast('Ready to colour!');
+        afterEdit();
+      });
     });
     $('tplNo').onclick = closeModal;
   }
@@ -2979,6 +3026,14 @@ $('zoomFit').addEventListener('click', resetView);
 $('layerBtn').addEventListener('click', openLayers);
 $('panBtn').addEventListener('click', function(){
   S.panMode = !S.panMode;
+  if(S.panMode && S.zoom <= 1){
+    /* a fitted picture has nowhere to move, so the hand looked broken -
+       zoom in a little so dragging actually does something */
+    setZoom(2);
+    applyView();
+    toast('Zoomed in - now drag to move around');
+    return;
+  }
   applyView();
   toast(S.panMode ? 'Drag to move the picture' : 'Back to drawing');
 });
@@ -3094,8 +3149,12 @@ function chooseImportStyle(img){
       '<span class="od">Keep it to use again</span></button>' +
     '</div><div class="sheetrow"><button id="impNo">Cancel</button></div>');
   $('impNo').onclick = closeModal;
-  $('impTrace').onclick = function(){ closeModal(); placeImport(img, true); };
-  $('impPhoto').onclick = function(){ closeModal(); placeImport(img, false); };
+  $('impTrace').onclick = function(){
+    closeModal(); startTrace(function(){ placeImport(img, true); });
+  };
+  $('impPhoto').onclick = function(){
+    closeModal(); startTrace(function(){ placeImport(img, false); });
+  };
   $('impSave').onclick = function(){ closeModal(); saveMyTrace(img); };
 }
 
