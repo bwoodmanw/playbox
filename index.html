@@ -378,13 +378,13 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:5;background:transparent;p
           <button class="act" id="envBtn">&#127794; Scene</button>
           <button class="act" id="tplBtn">&#128444;&#65039; Traces</button>
           <button class="act" id="layerBtn">&#128441;&#65039; Layers</button>
-          <button class="act" id="newPicBtn">&#128196; New</button>
         </div>
         <div class="trayfixed">
           <button class="act" id="undoBtn" aria-label="Undo">&#8630;</button>
           <button class="act" id="redoBtn" aria-label="Redo">&#8631;</button>
           <button class="act" id="eraseBtn" aria-label="Eraser">&#129529;</button>
-          <button class="act warn" id="clearBtn" aria-label="Clear">&#128465;</button>
+          <button class="act" id="newPicBtn" aria-label="New blank page">&#128196;</button>
+          <button class="act warn" id="clearBtn" aria-label="Rub out the drawing">&#128465;</button>
           <button class="act go" id="savePaint" aria-label="Save">&#128190;</button>
         </div>
       </div>
@@ -972,11 +972,13 @@ var SHAPES = [
       g.stroke();
       g.beginPath(); ellipse(g,q.cx,q.cy-ry*0.08,rx*0.5,ry*0.9); g.stroke();
       g.beginPath(); g.arc(q.cx,q.cy-ry*0.08,Math.max(1,rx*0.2),0,Math.PI*2); g.fill();
-      /* the highlight was painted white, which is only right on white paper -
-         over a scene it was a white dot. Punch it out instead. */
-      g.save(); g.globalCompositeOperation='destination-out';
-      g.beginPath(); g.arc(q.cx-rx*0.18,q.cy-ry*0.42,Math.max(1,rx*0.13),0,Math.PI*2); g.fill();
-      g.restore();
+      /* Painting it white was wrong over a scene; punching a hole was wrong
+         over plain paper, because the hole showed the white page through it
+         and still read as a white dot. Draw it as an outline instead, so it
+         is one more thing to colour in. */
+      g.beginPath();
+      g.arc(q.cx-rx*0.18,q.cy-ry*0.42,Math.max(1.5,rx*0.15),0,Math.PI*2);
+      g.stroke();
       var lw=g.lineWidth; g.lineWidth=lw*1.8;
       g.beginPath(); g.moveTo(q.cx-rx,q.cy);
       g.bezierCurveTo(q.cx-rx*0.6,q.cy-ry*1.7, q.cx+rx*0.6,q.cy-ry*1.7, q.cx+rx,q.cy);
@@ -1027,6 +1029,73 @@ var SHAPES = [
       } }},
   { id:'mouthopen', name:'Oh!', emoji:'\uD83D\uDE2E', cat:'face', draw:function(g,q){
       g.beginPath(); ellipse(g,q.cx,q.cy,Math.max(3,q.w/2),Math.max(3,q.h/2)); done(g,q); }},
+  { id:'lips', detail:true, name:'Lips', emoji:'\uD83D\uDC44', cat:'face', draw:function(g,q){
+      /* cupid's bow on top, fuller curve beneath */
+      var x=q.x, y=q.y, w=q.w, h=q.h, my=y+h*0.42;
+      g.beginPath();
+      g.moveTo(x, my);
+      g.bezierCurveTo(x+w*0.16, y-h*0.06, x+w*0.36, y+h*0.10, x+w*0.5, y+h*0.30);
+      g.bezierCurveTo(x+w*0.64, y+h*0.10, x+w*0.84, y-h*0.06, x+w, my);
+      /* the lower lip was ballooning well below the corners and reading as a
+         bowl rather than a mouth; keep it full but tucked in at the ends */
+      g.bezierCurveTo(x+w*0.90, y+h*0.98, x+w*0.10, y+h*0.98, x, my);
+      done(g,q);
+      g.beginPath(); g.moveTo(x, my);
+      g.quadraticCurveTo(x+w*0.5, y+h*0.52, x+w, my); g.stroke(); }},
+  { id:'lipsclosed', detail:true, name:'Closed lips', emoji:'\uD83E\uDD10', cat:'face', draw:function(g,q){
+      var x=q.x, y=q.y, w=q.w, h=q.h, my=y+h*0.5;
+      g.beginPath();
+      g.moveTo(x, my);
+      g.bezierCurveTo(x+w*0.18, y+h*0.04, x+w*0.38, y+h*0.18, x+w*0.5, y+h*0.34);
+      g.bezierCurveTo(x+w*0.62, y+h*0.18, x+w*0.82, y+h*0.04, x+w, my);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(x, my);
+      g.bezierCurveTo(x+w*0.2, y+h*0.94, x+w*0.8, y+h*0.94, x+w, my);
+      g.stroke(); }},
+  { id:'lipssmile', detail:true, name:'Smiling lips', emoji:'\uD83D\uDE0A', cat:'face', draw:function(g,q){
+      var x=q.x, y=q.y, w=q.w, h=q.h, my=y+h*0.30;
+      g.beginPath();
+      g.moveTo(x, my);
+      g.bezierCurveTo(x+w*0.18, y-h*0.10, x+w*0.36, y+h*0.02, x+w*0.5, y+h*0.20);
+      g.bezierCurveTo(x+w*0.64, y+h*0.02, x+w*0.82, y-h*0.10, x+w, my);
+      g.bezierCurveTo(x+w*0.86, y+h*1.14, x+w*0.14, y+h*1.14, x, my);
+      done(g,q);
+      g.beginPath(); g.moveTo(x, my);
+      g.quadraticCurveTo(x+w*0.5, y+h*0.62, x+w, my); g.stroke(); }},
+  { id:'lipssmirk', detail:true, name:'Smirk', emoji:'\uD83D\uDE0F', cat:'face', draw:function(g,q){
+      /* one corner lifted */
+      var x=q.x, y=q.y, w=q.w, h=q.h;
+      g.beginPath();
+      g.moveTo(x, y+h*0.62);
+      g.bezierCurveTo(x+w*0.20, y+h*0.10, x+w*0.44, y+h*0.20, x+w*0.58, y+h*0.30);
+      g.bezierCurveTo(x+w*0.74, y+h*0.14, x+w*0.90, y+h*0.06, x+w, y+h*0.20);
+      g.bezierCurveTo(x+w*0.84, y+h*0.96, x+w*0.24, y+h*1.06, x, y+h*0.62);
+      done(g,q);
+      g.beginPath(); g.moveTo(x, y+h*0.62);
+      g.bezierCurveTo(x+w*0.4, y+h*0.66, x+w*0.7, y+h*0.44, x+w, y+h*0.20);
+      g.stroke(); }},
+  { id:'lipsteeth', detail:true, name:'Toothy smile', emoji:'\uD83D\uDE04', cat:'face', draw:function(g,q){
+      var x=q.x, y=q.y, w=q.w, h=q.h, my=y+h*0.30;
+      /* outer lips */
+      g.beginPath();
+      g.moveTo(x, my);
+      g.bezierCurveTo(x+w*0.18, y-h*0.08, x+w*0.36, y+h*0.04, x+w*0.5, y+h*0.20);
+      g.bezierCurveTo(x+w*0.64, y+h*0.04, x+w*0.82, y-h*0.08, x+w, my);
+      g.bezierCurveTo(x+w*0.86, y+h*1.16, x+w*0.14, y+h*1.16, x, my);
+      g.stroke();
+      /* the row of teeth sits just inside the top lip */
+      var ty=y+h*0.34, by=y+h*0.62;
+      g.beginPath();
+      g.moveTo(x+w*0.10, ty);
+      g.quadraticCurveTo(x+w*0.5, y+h*0.20, x+w*0.90, ty);
+      g.lineTo(x+w*0.82, by);
+      g.quadraticCurveTo(x+w*0.5, y+h*0.74, x+w*0.18, by);
+      g.closePath(); g.stroke();
+      for(var i=1;i<5;i++){
+        var px=x+w*(0.10+i*0.16);
+        g.beginPath(); g.moveTo(px, ty+h*0.02); g.lineTo(px, by-h*0.02); g.stroke();
+      } }},
   { id:'ear', detail:true, name:'Ear', emoji:'👂', cat:'face', draw:function(g,q){
       var x=q.x, y=q.y, w=q.w, h=q.h;
       /* outer rim, open towards the face on the right */
@@ -1382,7 +1451,7 @@ function startTrace(apply){
     '<div class="optgrid">' +
       '<button id="tfNew"><span class="oe">\uD83D\uDCC4</span>' +
         '<span class="on2">Start fresh</span>' +
-        '<span class="od">Clear my drawing, keep the scene</span></button>' +
+        '<span class="od">Clear the drawing and the scene</span></button>' +
       '<button id="tfKeep"><span class="oe">\u270F\uFE0F</span>' +
         '<span class="on2">Keep my drawing</span>' +
         '<span class="od">Trace goes with it</span></button>' +
@@ -1391,6 +1460,7 @@ function startTrace(apply){
     closeModal();
     pushUndo();          /* undo still gets it back */
     clearBoard();
+    blankScene();        /* a new picture means a new background too */
     apply();
   };
   $('tfKeep').onclick = function(){ closeModal(); apply(); };
@@ -1399,17 +1469,21 @@ function startTrace(apply){
 /* A truly blank page: drawing, trace and scene all cleared. 'Start fresh'
    when picking a trace only clears the drawing, because the scene is usually
    a deliberate choice - but there was no way to get back to nothing. */
+function blankScene(){
+  S.paintEnv = 'none'; S.animEnv = 'none';
+  S.traceFront = false; S.traceHidden = false; S.sceneHidden = false;
+  store.set('paintEnv','none'); store.set('animEnv','none');
+  renderEnv($('paintBg'), 'none');
+  renderEnv($('animBg'), 'none');
+  applyLayerView();
+}
+
 function newPicture(){
   grownUpGate('Clear the drawing, the trace and the scene?', function(){
     pushUndo();
     clearBoard();
     clearTrace();
-    S.paintEnv = 'none'; S.animEnv = 'none';
-    S.traceFront = false; S.traceHidden = false; S.sceneHidden = false;
-    store.set('paintEnv','none'); store.set('animEnv','none');
-    renderEnv($('paintBg'), 'none');
-    renderEnv($('animBg'), 'none');
-    applyLayerView();
+    blankScene();
     resetView();
     afterEdit();
     toast('Blank page');
@@ -1900,79 +1974,14 @@ function buildSizes(wrapId){
 }
 
 /* ============================================================
-   COLOURING PAGES / TEMPLATES
+   PAPER
    Drawn with plain canvas ops in a centred -0.5..0.5 space so
    they scale to any tablet without any image files.
    ============================================================ */
-function tCirc(g,x,y,r){ g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.stroke(); }
-function tEll(g,x,y,rx,ry,rot){
-  g.save(); g.translate(x,y); g.rotate(rot||0); g.beginPath();
-  ellipse(g,0,0,rx,ry); g.stroke(); g.restore();
-}
-function tPoly(g,pts,close){
-  g.beginPath(); g.moveTo(pts[0][0],pts[0][1]);
-  for(var i=1;i<pts.length;i++) g.lineTo(pts[i][0],pts[i][1]);
-  if(close !== false) g.closePath();
-  g.stroke();
-}
-function tLine(g,x1,y1,x2,y2){ g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke(); }
-function tRect(g,x,y,w,h){ g.beginPath(); g.rect(x,y,w,h); g.stroke(); }
-function tStar(g,cx,cy,r){
-  g.beginPath();
-  for(var i=0;i<10;i++){
-    var rr=(i%2===0)?r:r*0.44, a=(Math.PI/5)*i-Math.PI/2;
-    var x=cx+Math.cos(a)*rr, y=cy+Math.sin(a)*rr;
-    if(i===0) g.moveTo(x,y); else g.lineTo(x,y);
-  }
-  g.closePath(); g.stroke();
-}
 /* bezier chain: [x0,y0, c1x,c1y,c2x,c2y,x,y, ...] */
-function tCurve(g,p){
-  g.beginPath(); g.moveTo(p[0],p[1]);
-  for(var i=2;i+5<p.length;i+=6) g.bezierCurveTo(p[i],p[i+1],p[i+2],p[i+3],p[i+4],p[i+5]);
-  g.stroke();
-}
-
 /* Manga eye: upper and lower lid arcs meeting at the corners with a large
    iris inside. Drawing a full ellipse plus a small circle instead reads as
    a pair of spectacles, which is what this replaced. */
-function tAnimeEye(g,cx,cy,rx,ry){
-  var lw = g.lineWidth;
-  var iy = cy - ry*0.08;
-  /* almond opening */
-  g.beginPath();
-  g.moveTo(cx-rx, cy);
-  g.bezierCurveTo(cx-rx*0.62, cy-ry*1.40, cx+rx*0.62, cy-ry*1.40, cx+rx, cy);
-  g.bezierCurveTo(cx+rx*0.55, cy+ry*1.05, cx-rx*0.55, cy+ry*1.05, cx-rx, cy);
-  g.stroke();
-  /* iris outline, then a solid pupil with a highlight punched through */
-  tEll(g, cx, iy, rx*0.48, ry*0.76, 0);
-  g.fillStyle = g.strokeStyle;
-  g.beginPath(); g.arc(cx, iy, rx*0.19, 0, Math.PI*2); g.fill();
-  g.save();
-  g.fillStyle = '#ffffff';
-  g.beginPath(); g.arc(cx - rx*0.15, iy - ry*0.30, rx*0.13, 0, Math.PI*2); g.fill();
-  g.restore();
-  /* heavy upper lash line - this is what stops it reading as spectacles */
-  g.lineWidth = lw * 1.7;
-  g.beginPath();
-  g.moveTo(cx-rx, cy);
-  g.bezierCurveTo(cx-rx*0.62, cy-ry*1.40, cx+rx*0.62, cy-ry*1.40, cx+rx, cy);
-  g.stroke();
-  g.lineWidth = lw;
-}
-
-var TPL_CATS = [
-  { id:'all',     name:'All',      emoji:'\u2728' },
-  { id:'easy',    name:'Easy',     emoji:'\uD83D\uDC23' },
-  { id:'anime',   name:'Anime',    emoji:'\uD83C\uDF38' },
-  { id:'teen',    name:'Teen',     emoji:'\uD83D\uDEF9' },
-  { id:'adult',   name:'Grown-up', emoji:'\uD83C\uDFA8' },
-  { id:'pattern', name:'Patterns', emoji:'\uD83C\uDF00' },
-  { id:'mine',    name:'My Traces', emoji:'\u2B50' },
-  { id:'extra',   name:'Added',     emoji:'\uD83D\uDCC1' }
-];
-
 /* ------------------------------------------------------------------
    Traces shipped in the site's own traces/ folder. Fetched the first
    time the picker opens - never during page load - so the app still
@@ -1980,16 +1989,28 @@ var TPL_CATS = [
    is empty; nothing else breaks.
    ------------------------------------------------------------------ */
 var EXTRA = null;
+var extraLoading = false;
 function loadExtraTraces(done){
   if(EXTRA !== null){ done(EXTRA); return; }
-  var give = function(list){ EXTRA = list || []; done(EXTRA); };
+  if(extraLoading){ setTimeout(function(){ loadExtraTraces(done); }, 150); return; }
+  extraLoading = true;
+
+  /* Only a successful fetch is remembered. Caching a failure meant one slow or
+     dropped request left the sets empty for the rest of the session, with no
+     way back short of reloading. */
+  function ok(list){ EXTRA = list || []; extraLoading = false; done(EXTRA); }
+  function fail(){ EXTRA = null; extraLoading = false; done([]); }
+
   try{
-    if(!window.fetch){ give([]); return; }
+    if(!window.fetch){ fail(); return; }
     fetch('traces/traces.json', { cache: 'no-cache' })
-      .then(function(r){ return r.ok ? r.json() : []; })
-      .then(function(j){ give(Array.isArray(j) ? j : (j && j.traces) || []); })
-      .catch(function(){ give([]); });
-  }catch(e){ give([]); }
+      .then(function(r){ if(!r.ok) throw new Error('http ' + r.status); return r.json(); })
+      .then(function(j){
+        var list = Array.isArray(j) ? j : (j && j.traces) || [];
+        if(list.length) ok(list); else fail();
+      })
+      .catch(fail);
+  }catch(e){ fail(); }
 }
 
 /* Line art is usually black on white. Dropping the white to transparent
@@ -2041,898 +2062,6 @@ function applyExtraTrace(entry){
   img.onerror = function(){ toast('Could not load that one'); };
   img.src = 'traces/' + encodeURIComponent(entry.file);
 }
-
-var TEMPLATES = [
-  { id:'blank', name:'Blank', draw:function(){} },
-  { id:'fish', name:'Fish', draw:function(g){
-      tEll(g,-0.03,0,0.28,0.17,0);
-      tPoly(g,[[0.22,0],[0.44,-0.16],[0.44,0.16]]);
-      tCirc(g,-0.16,-0.04,0.032);
-      tPoly(g,[[-0.05,-0.16],[0.06,-0.28],[0.12,-0.14]],false);
-      tPoly(g,[[-0.05,0.16],[0.06,0.28],[0.12,0.14]],false);
-      tCirc(g,-0.34,-0.2,0.035); tCirc(g,-0.4,-0.31,0.022);
-    }},
-  { id:'butterfly', name:'Butterfly', draw:function(g){
-      tEll(g,0,0,0.035,0.24,0);
-      tEll(g,-0.2,-0.13,0.18,0.14,-0.3);
-      tEll(g,0.2,-0.13,0.18,0.14,0.3);
-      tEll(g,-0.16,0.14,0.13,0.11,0.35);
-      tEll(g,0.16,0.14,0.13,0.11,-0.35);
-      tLine(g,-0.02,-0.23,-0.11,-0.36); tLine(g,0.02,-0.23,0.11,-0.36);
-      tCirc(g,-0.12,-0.38,0.022); tCirc(g,0.12,-0.38,0.022);
-    }},
-  { id:'flower', name:'Flower', draw:function(g){
-      for(var i=0;i<6;i++){
-        var a=(Math.PI/3)*i;
-        tEll(g,Math.cos(a)*0.19,Math.sin(a)*0.19-0.12,0.1,0.14,a+Math.PI/2);
-      }
-      tCirc(g,0,-0.12,0.085);
-      tLine(g,0,-0.03,0,0.42);
-      tEll(g,-0.13,0.16,0.11,0.055,-0.4);
-      tEll(g,0.13,0.26,0.11,0.055,0.4);
-    }},
-  { id:'house', name:'House', draw:function(g){
-      tRect(g,-0.28,-0.05,0.56,0.42);
-      tPoly(g,[[-0.34,-0.05],[0,-0.36],[0.34,-0.05]]);
-      tRect(g,-0.08,0.14,0.16,0.23);
-      tRect(g,-0.22,0.03,0.11,0.11);
-      tRect(g,0.11,0.03,0.11,0.11);
-      tCirc(g,0.3,-0.33,0.07);
-    }},
-  { id:'rocket', name:'Rocket', draw:function(g){
-      tEll(g,0,-0.02,0.12,0.26,0);
-      tPoly(g,[[-0.12,-0.05],[0,-0.42],[0.12,-0.05]],false);
-      tPoly(g,[[-0.12,0.08],[-0.28,0.28],[-0.12,0.24]]);
-      tPoly(g,[[0.12,0.08],[0.28,0.28],[0.12,0.24]]);
-      tCirc(g,0,-0.08,0.06);
-      tPoly(g,[[-0.07,0.24],[0,0.42],[0.07,0.24]],false);
-      tCirc(g,-0.34,-0.28,0.02); tCirc(g,0.33,-0.15,0.025);
-    }},
-  { id:'car', name:'Car', draw:function(g){
-      tPoly(g,[[-0.38,0.12],[-0.34,-0.04],[-0.16,-0.04],[-0.08,-0.22],[0.16,-0.22],[0.2,-0.04],[0.38,-0.04],[0.4,0.12]]);
-      tCirc(g,-0.22,0.16,0.1); tCirc(g,0.24,0.16,0.1);
-      tLine(g,0.04,-0.22,0.04,-0.04);
-      tCirc(g,0.36,-0.01,0.02);
-    }},
-  { id:'cat', name:'Cat', draw:function(g){
-      tCirc(g,0,0.02,0.28);
-      tPoly(g,[[-0.24,-0.14],[-0.28,-0.4],[-0.05,-0.24]]);
-      tPoly(g,[[0.24,-0.14],[0.28,-0.4],[0.05,-0.24]]);
-      tCirc(g,-0.1,-0.02,0.04); tCirc(g,0.1,-0.02,0.04);
-      tPoly(g,[[-0.04,0.08],[0.04,0.08],[0,0.13]]);
-      tLine(g,0,0.13,0,0.17);
-      tLine(g,-0.28,0.06,-0.44,0.02); tLine(g,-0.28,0.11,-0.44,0.13);
-      tLine(g,0.28,0.06,0.44,0.02); tLine(g,0.28,0.11,0.44,0.13);
-    }},
-  { id:'icecream', name:'Ice cream', draw:function(g){
-      tPoly(g,[[-0.14,0.04],[0.14,0.04],[0,0.42]]);
-      tCirc(g,-0.08,-0.06,0.11); tCirc(g,0.08,-0.06,0.11); tCirc(g,0,-0.2,0.11);
-      tCirc(g,0,-0.34,0.045);
-      tLine(g,-0.06,0.1,0.06,0.24); tLine(g,0.06,0.1,-0.03,0.28);
-    }},
-  { id:'robot', name:'Robot', draw:function(g){
-      tRect(g,-0.19,-0.34,0.38,0.28);
-      tLine(g,0,-0.34,0,-0.44); tCirc(g,0,-0.46,0.03);
-      tCirc(g,-0.09,-0.24,0.045); tCirc(g,0.09,-0.24,0.045);
-      tRect(g,-0.1,-0.15,0.2,0.06);
-      tRect(g,-0.24,-0.04,0.48,0.3);
-      tRect(g,-0.38,-0.02,0.14,0.06); tRect(g,0.24,-0.02,0.14,0.06);
-      tRect(g,-0.17,0.26,0.1,0.16); tRect(g,0.07,0.26,0.1,0.16);
-      tCirc(g,0,0.1,0.06);
-    }},
-  { id:'tree', name:'Tree', draw:function(g){
-      tRect(g,-0.05,0.1,0.1,0.32);
-      tCirc(g,0,-0.14,0.2); tCirc(g,-0.17,0.02,0.15); tCirc(g,0.17,0.02,0.15);
-      tCirc(g,-0.1,-0.1,0.035); tCirc(g,0.12,-0.05,0.035); tCirc(g,0.02,0.04,0.035);
-    }},
-  { id:'star', name:'Stars', draw:function(g){
-      tStar(g,0,-0.02,0.26);
-      tStar(g,-0.34,-0.3,0.09); tStar(g,0.33,-0.26,0.07); tStar(g,0.3,0.3,0.1);
-      tStar(g,-0.3,0.32,0.06);
-    }},
-  { id:'balloons', name:'Balloons', draw:function(g){
-      tEll(g,-0.19,-0.2,0.13,0.16,0); tLine(g,-0.19,-0.04,-0.13,0.4);
-      tEll(g,0.05,-0.29,0.13,0.16,0); tLine(g,0.05,-0.13,-0.05,0.4);
-      tEll(g,0.26,-0.13,0.12,0.15,0); tLine(g,0.26,0.02,0.06,0.4);
-    }},
-
-  /* ---- anime: drawn in a generic style, not any existing character ---- */
-  { id:'animegirl', name:'Anime girl', cat:'anime', draw:function(g){
-      tCurve(g,[-0.17,-0.06, -0.17,0.10, -0.10,0.25, 0,0.30, 0.10,0.25, 0.17,0.10, 0.17,-0.06]);
-      tCurve(g,[-0.17,-0.06, -0.24,-0.36, -0.08,-0.46, 0,-0.46, 0.08,-0.46, 0.24,-0.36, 0.17,-0.06]);
-      /* side-swept fringe */
-      tCurve(g,[-0.17,-0.11, -0.13,-0.30, 0.00,-0.33, 0.05,-0.19]);
-      tCurve(g,[0.05,-0.19, 0.09,-0.29, 0.15,-0.27, 0.17,-0.11]);
-      tCurve(g,[-0.20,-0.16, -0.28,0.06, -0.26,0.26, -0.22,0.38]);
-      tCurve(g,[0.20,-0.16, 0.28,0.06, 0.26,0.26, 0.22,0.38]);
-      tAnimeEye(g,-0.085,0.045,0.066,0.072);
-      tAnimeEye(g,0.085,0.045,0.066,0.072);
-      tCurve(g,[-0.12,-0.06, -0.09,-0.09, -0.05,-0.09, -0.03,-0.06]);
-      tCurve(g,[0.12,-0.06, 0.09,-0.09, 0.05,-0.09, 0.03,-0.06]);
-      tLine(g,0,0.11,0.015,0.14);
-      tCurve(g,[-0.035,0.19, -0.015,0.22, 0.015,0.22, 0.035,0.19]);
-    }},
-  { id:'animeboy', name:'Anime boy', cat:'anime', draw:function(g){
-      tCurve(g,[-0.16,-0.06, -0.16,0.10, -0.09,0.24, 0,0.28, 0.09,0.24, 0.16,0.10, 0.16,-0.06]);
-      tPoly(g,[[-0.16,-0.06],[-0.22,-0.20],[-0.13,-0.17],[-0.15,-0.33],[-0.04,-0.22],
-               [0,-0.40],[0.05,-0.22],[0.15,-0.33],[0.13,-0.17],[0.22,-0.20],[0.16,-0.06]],false);
-      tAnimeEye(g,-0.085,0.035,0.064,0.060);
-      tAnimeEye(g,0.085,0.035,0.064,0.060);
-      tLine(g,-0.13,-0.05,-0.035,-0.03); tLine(g,0.13,-0.05,0.035,-0.03);
-      tLine(g,0,0.10,0.016,0.13);
-      tCurve(g,[-0.04,0.18, -0.015,0.21, 0.015,0.21, 0.04,0.18]);
-      /* neck and shoulders */
-      tLine(g,-0.05,0.27,-0.05,0.33); tLine(g,0.05,0.27,0.05,0.33);
-      tCurve(g,[-0.05,0.33, -0.20,0.36, -0.26,0.42, -0.27,0.48]);
-      tCurve(g,[0.05,0.33, 0.20,0.36, 0.26,0.42, 0.27,0.48]);
-    }},
-  { id:'chibi', name:'Chibi', cat:'anime', draw:function(g){
-      tCirc(g,0,-0.18,0.22);
-      tCurve(g,[-0.22,-0.18, -0.22,-0.38, -0.10,-0.44, 0,-0.44, 0.10,-0.44, 0.22,-0.38, 0.22,-0.18]);
-      tEll(g,-0.085,-0.14,0.045,0.06,0); tEll(g,0.085,-0.14,0.045,0.06,0);
-      tCirc(g,-0.085,-0.14,0.022); tCirc(g,0.085,-0.14,0.022);
-      tCirc(g,-0.16,-0.06,0.025); tCirc(g,0.16,-0.06,0.025);
-      tCurve(g,[-0.03,-0.04, -0.01,-0.01, 0.01,-0.01, 0.03,-0.04]);
-      tCurve(g,[-0.13,0.06, -0.16,0.20, -0.14,0.30, -0.12,0.34]);
-      tCurve(g,[0.13,0.06, 0.16,0.20, 0.14,0.30, 0.12,0.34]);
-      tLine(g,-0.12,0.34,0.12,0.34);
-      tCurve(g,[-0.13,0.10, -0.22,0.16, -0.24,0.24, -0.22,0.28]);
-      tCurve(g,[0.13,0.10, 0.22,0.16, 0.24,0.24, 0.22,0.28]);
-      tRect(g,-0.10,0.34,0.07,0.10); tRect(g,0.03,0.34,0.07,0.10);
-    }},
-  { id:'mangaeyes', name:'Manga eyes', cat:'anime', draw:function(g){
-      [-0.21,0.21].forEach(function(cx){
-        var out = cx < 0 ? -1 : 1;
-        tAnimeEye(g,cx,0.04,0.185,0.150);
-        /* three lashes flicking away from the nose */
-        tLine(g, cx+0.185*out, 0.02, cx+0.245*out, -0.05);
-        tLine(g, cx+0.150*out, -0.06, cx+0.200*out, -0.14);
-        tLine(g, cx+0.095*out, -0.09, cx+0.125*out, -0.17);
-      });
-    }},
-
-  /* ---- cool / older themes ---- */
-  { id:'skateboard', name:'Skateboard', cat:'teen', draw:function(g){
-      tCurve(g,[-0.42,0.02, -0.46,-0.10, -0.34,-0.12, -0.24,-0.12]);
-      tLine(g,-0.24,-0.12,0.24,-0.12);
-      tCurve(g,[0.24,-0.12, 0.34,-0.12, 0.46,-0.10, 0.42,0.02]);
-      tCurve(g,[0.42,0.02, 0.36,0.06, 0.30,0.04, 0.24,0.04]);
-      tLine(g,0.24,0.04,-0.24,0.04);
-      tCurve(g,[-0.24,0.04, -0.30,0.04, -0.36,0.06, -0.42,0.02]);
-      tLine(g,-0.22,0.04,-0.22,0.10); tLine(g,0.22,0.04,0.22,0.10);
-      tCirc(g,-0.26,0.14,0.055); tCirc(g,-0.14,0.14,0.055);
-      tCirc(g,0.14,0.14,0.055); tCirc(g,0.26,0.14,0.055);
-      tLine(g,-0.14,-0.12,-0.08,0.04); tLine(g,0.02,-0.12,0.08,0.04);
-    }},
-  { id:'guitar', name:'Guitar', cat:'teen', draw:function(g){
-      /* double-cutaway body */
-      tCurve(g,[-0.20,0.04, -0.32,0.08, -0.34,0.26, -0.20,0.36]);
-      tCurve(g,[-0.20,0.36, -0.08,0.45, 0.08,0.45, 0.20,0.36]);
-      tCurve(g,[0.20,0.36, 0.34,0.26, 0.32,0.08, 0.20,0.04]);
-      tCurve(g,[0.20,0.04, 0.12,0.00, 0.07,0.07, 0.00,0.07]);
-      tCurve(g,[0.00,0.07, -0.07,0.07, -0.12,0.00, -0.20,0.04]);
-      /* neck, headstock, tuners */
-      tRect(g,-0.028,-0.34,0.056,0.41);
-      tPoly(g,[[-0.058,-0.34],[-0.05,-0.47],[0.05,-0.47],[0.058,-0.34]]);
-      tCirc(g,-0.088,-0.44,0.015); tCirc(g,-0.088,-0.40,0.015); tCirc(g,-0.088,-0.36,0.015);
-      tCirc(g,0.088,-0.44,0.015); tCirc(g,0.088,-0.40,0.015); tCirc(g,0.088,-0.36,0.015);
-      /* frets */
-      tLine(g,-0.028,-0.25,0.028,-0.25); tLine(g,-0.028,-0.16,0.028,-0.16);
-      tLine(g,-0.028,-0.07,0.028,-0.07); tLine(g,-0.028,0.01,0.028,0.01);
-      /* pickups and controls */
-      tRect(g,-0.085,0.13,0.17,0.042); tRect(g,-0.085,0.21,0.17,0.042);
-      tCirc(g,0.17,0.30,0.026); tCirc(g,0.24,0.23,0.026);
-    }},
-  { id:'sneaker', name:'Sneaker', cat:'teen', draw:function(g){
-      /* sole */
-      tCurve(g,[-0.40,0.17, -0.45,0.23, -0.43,0.30, -0.34,0.31]);
-      tLine(g,-0.34,0.31,0.32,0.31);
-      tCurve(g,[0.32,0.31, 0.41,0.31, 0.43,0.26, 0.40,0.19]);
-      tLine(g,-0.40,0.17,0.40,0.19);
-      /* toe box and upper */
-      tCurve(g,[-0.40,0.17, -0.41,0.03, -0.31,-0.07, -0.18,-0.09]);
-      tCurve(g,[-0.18,-0.09, -0.09,-0.10, -0.05,-0.01, 0.01,0.05]);
-      tCurve(g,[0.01,0.05, 0.12,0.11, 0.27,0.14, 0.40,0.19]);
-      /* tongue */
-      tCurve(g,[-0.18,-0.09, -0.24,-0.03, -0.22,0.04, -0.17,0.09]);
-      /* laces */
-      tLine(g,-0.31,0.02,-0.17,0.09); tLine(g,-0.32,0.08,-0.14,0.14);
-      tLine(g,-0.31,0.14,-0.10,0.19);
-      /* side stripe and heel tab */
-      tCurve(g,[-0.05,0.27, 0.05,0.16, 0.18,0.12, 0.31,0.16]);
-      tCurve(g,[0.34,0.15, 0.40,0.11, 0.43,0.15, 0.40,0.19]);
-    }},
-  { id:'headphones', name:'Headphones', cat:'teen', draw:function(g){
-      tCurve(g,[-0.30,0.06, -0.32,-0.30, 0.32,-0.30, 0.30,0.06]);
-      tCurve(g,[-0.22,0.04, -0.24,-0.22, 0.24,-0.22, 0.22,0.04]);
-      tRect(g,-0.38,0.04,0.16,0.26); tRect(g,0.22,0.04,0.16,0.26);
-      tEll(g,-0.30,0.17,0.05,0.09,0); tEll(g,0.30,0.17,0.05,0.09,0);
-      tCurve(g,[0.30,0.30, 0.34,0.40, 0.24,0.44, 0.20,0.48]);
-    }},
-  { id:'dragon', name:'Dragon', cat:'teen', draw:function(g){
-      /* skull, brow ridge and snout, facing right */
-      tCurve(g,[-0.34,0.12, -0.34,-0.10, -0.18,-0.22, 0.00,-0.20]);
-      tCurve(g,[0.00,-0.20, 0.18,-0.18, 0.30,-0.08, 0.38,0.00]);
-      tCurve(g,[0.38,0.00, 0.43,0.05, 0.41,0.12, 0.34,0.12]);
-      /* jaw */
-      tCurve(g,[0.34,0.12, 0.18,0.15, 0.04,0.17, -0.06,0.21]);
-      tCurve(g,[-0.06,0.21, -0.20,0.24, -0.32,0.22, -0.34,0.12]);
-      /* swept-back horns */
-      tCurve(g,[-0.14,-0.20, -0.22,-0.34, -0.36,-0.38, -0.45,-0.31]);
-      tCurve(g,[0.01,-0.20, -0.04,-0.33, -0.16,-0.41, -0.28,-0.39]);
-      /* brow, eye, nostril */
-      tCurve(g,[-0.05,-0.13, 0.02,-0.17, 0.09,-0.15, 0.12,-0.10]);
-      tEll(g,0.02,-0.05,0.052,0.033,-0.25); tCirc(g,0.02,-0.05,0.017);
-      tCirc(g,0.34,0.04,0.015);
-      /* teeth */
-      tPoly(g,[[0.22,0.14],[0.25,0.22],[0.29,0.13]],false);
-      tPoly(g,[[0.10,0.16],[0.13,0.25],[0.17,0.15]],false);
-      /* neck spikes */
-      tPoly(g,[[-0.24,0.23],[-0.32,0.34],[-0.16,0.29]],false);
-      tPoly(g,[[-0.08,0.21],[-0.14,0.36],[0.00,0.27]],false);
-    }},
-  { id:'sportscar', name:'Sports car', cat:'teen', draw:function(g){
-      tCurve(g,[-0.44,0.10, -0.44,0.02, -0.36,-0.02, -0.28,-0.04]);
-      tCurve(g,[-0.28,-0.04, -0.18,-0.18, 0.02,-0.20, 0.14,-0.14]);
-      tCurve(g,[0.14,-0.14, 0.28,-0.08, 0.40,-0.04, 0.44,0.04]);
-      tLine(g,0.44,0.04,0.44,0.12); tLine(g,-0.44,0.10,-0.44,0.12);
-      tLine(g,-0.44,0.12,0.44,0.12);
-      tCurve(g,[-0.22,-0.05, -0.14,-0.15, 0.00,-0.16, 0.08,-0.12]);
-      tLine(g,-0.02,-0.16,-0.02,-0.05);
-      tCirc(g,-0.26,0.12,0.10); tCirc(g,0.26,0.12,0.10);
-      tCirc(g,-0.26,0.12,0.045); tCirc(g,0.26,0.12,0.045);
-      tLine(g,-0.44,0.04,-0.34,0.04); tRect(g,0.34,0.00,0.08,0.04);
-    }},
-  { id:'skull', name:'Skull', cat:'teen', draw:function(g){
-      tCurve(g,[-0.24,0.06, -0.26,-0.20, -0.12,-0.34, 0,-0.34]);
-      tCurve(g,[0,-0.34, 0.12,-0.34, 0.26,-0.20, 0.24,0.06]);
-      tCurve(g,[0.24,0.06, 0.22,0.14, 0.16,0.16, 0.12,0.16]);
-      tCurve(g,[-0.24,0.06, -0.22,0.14, -0.16,0.16, -0.12,0.16]);
-      tLine(g,0.12,0.16,0.12,0.26); tLine(g,-0.12,0.16,-0.12,0.26);
-      tLine(g,-0.12,0.26,0.12,0.26);
-      tEll(g,-0.10,-0.10,0.065,0.075,0); tEll(g,0.10,-0.10,0.065,0.075,0);
-      tPoly(g,[[0,0.00],[-0.035,0.08],[0.035,0.08]]);
-      tLine(g,-0.10,0.16,-0.10,0.26); tLine(g,-0.035,0.16,-0.035,0.26);
-      tLine(g,0.035,0.16,0.035,0.26);
-    }},
-
-  /* ---- patterns ---- */
-  { id:'mandala', name:'Mandala', cat:'pattern', draw:function(g){
-      tCirc(g,0,0,0.06); tCirc(g,0,0,0.12); tCirc(g,0,0,0.30); tCirc(g,0,0,0.42);
-      for(var i=0;i<12;i++){
-        var a=(Math.PI/6)*i;
-        tEll(g,Math.cos(a)*0.21,Math.sin(a)*0.21,0.05,0.085,a+Math.PI/2);
-        tLine(g,Math.cos(a)*0.30,Math.sin(a)*0.30,Math.cos(a)*0.42,Math.sin(a)*0.42);
-      }
-      for(var j=0;j<24;j++){
-        var b=(Math.PI/12)*j;
-        tCirc(g,Math.cos(b)*0.36,Math.sin(b)*0.36,0.022);
-      }
-    }},
-  { id:'rose', name:'Rose', cat:'pattern', draw:function(g){
-      /* open spiral centre */
-      tCirc(g,0,-0.15,0.035);
-      tCurve(g,[0.045,-0.15, 0.045,-0.22, -0.05,-0.23, -0.075,-0.15]);
-      tCurve(g,[-0.075,-0.15, -0.085,-0.06, 0.03,-0.04, 0.09,-0.10]);
-      /* five outer petals */
-      for(var i=0;i<5;i++){
-        var a=(Math.PI*2/5)*i - Math.PI/2;
-        tEll(g, Math.cos(a)*0.155, Math.sin(a)*0.155-0.15, 0.115, 0.085, a+Math.PI/2);
-      }
-      /* stem and leaves */
-      tCurve(g,[0,0.00, 0.03,0.16, -0.02,0.30, 0.01,0.45]);
-      tEll(g,-0.13,0.19,0.105,0.05,-0.45);
-      tEll(g,0.13,0.32,0.105,0.05,0.45);
-    }},
-  { id:'galaxy', name:'Galaxy', cat:'pattern', draw:function(g){
-      tCirc(g,-0.06,-0.04,0.16);
-      tEll(g,-0.06,-0.04,0.34,0.10,-0.35);
-      tEll(g,-0.06,-0.04,0.28,0.075,-0.35);
-      tCirc(g,0.26,0.24,0.07);
-      tCirc(g,0.22,0.22,0.02); tCirc(g,0.30,0.27,0.015);
-      tStar(g,-0.34,-0.30,0.06); tStar(g,0.30,-0.32,0.045);
-      tStar(g,-0.36,0.26,0.035); tStar(g,0.08,-0.40,0.03);
-      tCirc(g,-0.20,-0.38,0.012); tCirc(g,0.40,0.02,0.012);
-    }},
-
-  /* ================= ANIME ================= */
-  { id:'animeduo', name:'Two friends', cat:'anime', draw:function(g){
-      [-0.24, 0.24].forEach(function(cx, side){
-        /* face */
-        tCurve(g,[cx-0.13,-0.09, cx-0.13,0.04, cx-0.07,0.16, cx,0.20,
-                  cx+0.07,0.16, cx+0.13,0.04, cx+0.13,-0.09]);
-        if(side === 0){
-          /* long hair */
-          tCurve(g,[cx-0.13,-0.09, cx-0.19,-0.33, cx-0.06,-0.41, cx,-0.41,
-                    cx+0.06,-0.41, cx+0.19,-0.33, cx+0.13,-0.09]);
-          tCurve(g,[cx-0.16,-0.16, cx-0.22,0.03, cx-0.20,0.21, cx-0.17,0.31]);
-          tCurve(g,[cx+0.16,-0.16, cx+0.22,0.03, cx+0.20,0.21, cx+0.17,0.31]);
-        } else {
-          /* spiky hair */
-          tPoly(g,[[cx-0.13,-0.09],[cx-0.18,-0.21],[cx-0.10,-0.19],[cx-0.12,-0.33],
-                   [cx-0.02,-0.23],[cx+0.01,-0.39],[cx+0.05,-0.23],[cx+0.12,-0.32],
-                   [cx+0.10,-0.18],[cx+0.18,-0.21],[cx+0.13,-0.09]],false);
-        }
-        tAnimeEye(g,cx-0.062,0.005,0.046,0.050);
-        tAnimeEye(g,cx+0.062,0.005,0.046,0.050);
-        tCurve(g,[cx-0.03,0.10, cx-0.01,0.13, cx+0.01,0.13, cx+0.03,0.10]);
-        tLine(g,cx-0.04,0.20,cx-0.04,0.26); tLine(g,cx+0.04,0.20,cx+0.04,0.26);
-        tCurve(g,[cx-0.04,0.26, cx-0.15,0.29, cx-0.19,0.36, cx-0.20,0.46]);
-        tCurve(g,[cx+0.04,0.26, cx+0.15,0.29, cx+0.19,0.36, cx+0.20,0.46]);
-      });
-    }},
-  { id:'animecat', name:'Cat girl', cat:'anime', draw:function(g){
-      tCurve(g,[-0.17,-0.06, -0.17,0.10, -0.10,0.25, 0,0.30, 0.10,0.25, 0.17,0.10, 0.17,-0.06]);
-      tCurve(g,[-0.17,-0.06, -0.23,-0.31, -0.08,-0.39, 0,-0.39, 0.08,-0.39, 0.23,-0.31, 0.17,-0.06]);
-      tPoly(g,[[-0.20,-0.25],[-0.27,-0.47],[-0.06,-0.35]],false);
-      tPoly(g,[[0.20,-0.25],[0.27,-0.47],[0.06,-0.35]],false);
-      tPoly(g,[[-0.19,-0.28],[-0.23,-0.41],[-0.10,-0.34]],false);
-      tPoly(g,[[0.19,-0.28],[0.23,-0.41],[0.10,-0.34]],false);
-      tAnimeEye(g,-0.085,0.045,0.060,0.068);
-      tAnimeEye(g,0.085,0.045,0.060,0.068);
-      tPoly(g,[[-0.022,0.135],[0.022,0.135],[0,0.165]]);
-      tCurve(g,[-0.055,0.19, -0.02,0.225, 0.02,0.225, 0.055,0.19]);
-      tLine(g,-0.19,0.13,-0.34,0.10); tLine(g,-0.19,0.18,-0.34,0.20);
-      tLine(g,0.19,0.13,0.34,0.10); tLine(g,0.19,0.18,0.34,0.20);
-      tCurve(g,[-0.20,-0.13, -0.27,0.06, -0.25,0.24, -0.22,0.35]);
-      tCurve(g,[0.20,-0.13, 0.27,0.06, 0.25,0.24, 0.22,0.35]);
-    }},
-  { id:'animeidol', name:'Pop star', cat:'anime', draw:function(g){
-      tCurve(g,[-0.15,-0.10, -0.15,0.04, -0.09,0.16, 0,0.20, 0.09,0.16, 0.15,0.04, 0.15,-0.10]);
-      tCurve(g,[-0.15,-0.10, -0.21,-0.34, -0.07,-0.42, 0,-0.42, 0.07,-0.42, 0.21,-0.34, 0.15,-0.10]);
-      /* hair ties, then twin tails falling down beside the head */
-      tCirc(g,-0.185,-0.14,0.030); tCirc(g,0.185,-0.14,0.030);
-      tCurve(g,[-0.20,-0.11, -0.30,0.00, -0.32,0.16, -0.26,0.28]);
-      tCurve(g,[-0.26,0.28, -0.20,0.20, -0.17,0.06, -0.165,-0.08]);
-      tCurve(g,[0.20,-0.11, 0.30,0.00, 0.32,0.16, 0.26,0.28]);
-      tCurve(g,[0.26,0.28, 0.20,0.20, 0.17,0.06, 0.165,-0.08]);
-      /* fringe */
-      tCurve(g,[-0.15,-0.16, -0.10,-0.28, 0.02,-0.30, 0.06,-0.18]);
-      tAnimeEye(g,-0.070,0.00,0.050,0.056);
-      tAnimeEye(g,0.070,0.00,0.050,0.056);
-      tCurve(g,[-0.035,0.09, -0.012,0.125, 0.012,0.125, 0.035,0.09]);
-      /* microphone */
-      tCirc(g,0.30,0.18,0.055);
-      tCurve(g,[0.275,0.23, 0.24,0.34, 0.21,0.41, 0.19,0.45]);
-      tCurve(g,[0.325,0.23, 0.29,0.34, 0.26,0.41, 0.24,0.45]);
-      tLine(g,0.19,0.45,0.24,0.45);
-      /* notes */
-      tCirc(g,-0.33,0.20,0.032); tLine(g,-0.298,0.20,-0.286,0.10);
-      tCirc(g,-0.41,0.36,0.028); tLine(g,-0.382,0.36,-0.37,0.27);
-    }},
-  { id:'animeninja', name:'Ninja', cat:'anime', draw:function(g){
-      tCurve(g,[-0.17,-0.06, -0.17,0.10, -0.10,0.25, 0,0.30, 0.10,0.25, 0.17,0.10, 0.17,-0.06]);
-      /* hood */
-      tCurve(g,[-0.17,-0.06, -0.24,-0.34, -0.08,-0.43, 0,-0.43, 0.08,-0.43, 0.24,-0.34, 0.17,-0.06]);
-      /* mask band across the lower face */
-      tCurve(g,[-0.165,0.13, -0.08,0.20, 0.08,0.20, 0.165,0.13]);
-      /* headband with trailing ties */
-      tRect(g,-0.19,-0.16,0.38,0.075);
-      tCurve(g,[0.19,-0.14, 0.30,-0.10, 0.36,-0.02, 0.40,0.06]);
-      tCurve(g,[0.19,-0.09, 0.29,-0.04, 0.34,0.04, 0.37,0.13]);
-      tAnimeEye(g,-0.078,0.02,0.050,0.042);
-      tAnimeEye(g,0.078,0.02,0.050,0.042);
-      /* shoulders */
-      tCurve(g,[-0.10,0.30, -0.24,0.35, -0.30,0.40, -0.31,0.47]);
-      tCurve(g,[0.10,0.30, 0.24,0.35, 0.30,0.40, 0.31,0.47]);
-    }},
-  { id:'animefox', name:'Fox spirit', cat:'anime', draw:function(g){
-      tCurve(g,[-0.155,-0.08, -0.155,0.06, -0.09,0.19, 0,0.23, 0.09,0.19, 0.155,0.06, 0.155,-0.08]);
-      tCurve(g,[-0.155,-0.08, -0.215,-0.32, -0.07,-0.40, 0,-0.40, 0.07,-0.40, 0.215,-0.32, 0.155,-0.08]);
-      /* tall fox ears with inner fur */
-      tPoly(g,[[-0.17,-0.245],[-0.245,-0.50],[-0.045,-0.35]],false);
-      tPoly(g,[[0.17,-0.245],[0.245,-0.50],[0.045,-0.35]],false);
-      tPoly(g,[[-0.163,-0.275],[-0.205,-0.435],[-0.085,-0.345]],false);
-      tPoly(g,[[0.163,-0.275],[0.205,-0.435],[0.085,-0.345]],false);
-      tAnimeEye(g,-0.072,0.02,0.052,0.056);
-      tAnimeEye(g,0.072,0.02,0.052,0.056);
-      tPoly(g,[[-0.02,0.105],[0.02,0.105],[0,0.135]]);
-      tCurve(g,[-0.05,0.16, -0.018,0.192, 0.018,0.192, 0.05,0.16]);
-      /* side hair */
-      tCurve(g,[-0.185,-0.16, -0.25,0.04, -0.235,0.22, -0.205,0.32]);
-      tCurve(g,[0.185,-0.16, 0.25,0.04, 0.235,0.22, 0.205,0.32]);
-      /* one bushy tail curling up, joined to the body */
-      tCurve(g,[0.17,0.30, 0.32,0.37, 0.45,0.25, 0.43,0.10]);
-      tCurve(g,[0.43,0.10, 0.41,0.00, 0.35,-0.05, 0.30,-0.03]);
-      tCurve(g,[0.30,-0.03, 0.35,0.06, 0.35,0.21, 0.25,0.29]);
-      tCurve(g,[0.25,0.29, 0.21,0.32, 0.18,0.32, 0.17,0.30]);
-      tCurve(g,[0.41,0.05, 0.37,0.03, 0.34,0.04, 0.325,0.07]);
-    }},
-  { id:'animepair', name:'Chibi pair', cat:'anime', draw:function(g){
-      [-0.21, 0.21].forEach(function(cx, side){
-        tCirc(g, cx, -0.16, 0.175);
-        tCurve(g,[cx-0.175,-0.16, cx-0.175,-0.32, cx-0.08,-0.37, cx,-0.37,
-                  cx+0.08,-0.37, cx+0.175,-0.32, cx+0.175,-0.16]);
-        if(side === 1){ tPoly(g,[[cx-0.10,-0.31],[cx-0.03,-0.44],[cx+0.02,-0.32]],false); }
-        tAnimeEye(g, cx-0.068, -0.13, 0.044, 0.046);
-        tAnimeEye(g, cx+0.068, -0.13, 0.044, 0.046);
-        tCirc(g, cx-0.13, -0.055, 0.022); tCirc(g, cx+0.13, -0.055, 0.022);
-        tCurve(g,[cx-0.028,-0.04, cx-0.01,-0.015, cx+0.01,-0.015, cx+0.028,-0.04]);
-        /* body */
-        tCurve(g,[cx-0.10,0.05, cx-0.13,0.18, cx-0.11,0.28, cx-0.09,0.32]);
-        tCurve(g,[cx+0.10,0.05, cx+0.13,0.18, cx+0.11,0.28, cx+0.09,0.32]);
-        tLine(g, cx-0.09,0.32, cx+0.09,0.32);
-        tRect(g, cx-0.075, 0.32, 0.055, 0.09);
-        tRect(g, cx+0.02, 0.32, 0.055, 0.09);
-        /* outer arm */
-        var o = side === 0 ? -1 : 1;
-        tCurve(g,[cx+0.10*o,0.09, cx+0.19*o,0.14, cx+0.21*o,0.22, cx+0.19*o,0.27]);
-      });
-      /* held hands in the middle */
-      tCurve(g,[-0.11,0.09, -0.05,0.14, 0.05,0.14, 0.11,0.09]);
-      tCirc(g,0,0.145,0.028);
-    }},
-
-  /* ================= TEEN ================= */
-  { id:'gamepad', name:'Controller', cat:'teen', draw:function(g){
-      tCurve(g,[-0.42,0.10, -0.44,-0.02, -0.34,-0.12, -0.20,-0.12]);
-      tLine(g,-0.20,-0.12,0.20,-0.12);
-      tCurve(g,[0.20,-0.12, 0.34,-0.12, 0.44,-0.02, 0.42,0.10]);
-      tCurve(g,[0.42,0.10, 0.40,0.22, 0.30,0.24, 0.22,0.16]);
-      tCurve(g,[0.22,0.16, 0.14,0.08, -0.14,0.08, -0.22,0.16]);
-      tCurve(g,[-0.22,0.16, -0.30,0.24, -0.40,0.22, -0.42,0.10]);
-      /* d-pad */
-      tPoly(g,[[-0.28,-0.04],[-0.22,-0.04],[-0.22,-0.10],[-0.16,-0.10],[-0.16,-0.04],
-               [-0.10,-0.04],[-0.10,0.02],[-0.16,0.02],[-0.16,0.08],[-0.22,0.08],[-0.22,0.02],[-0.28,0.02]]);
-      /* buttons */
-      tCirc(g,0.16,-0.05,0.033); tCirc(g,0.26,-0.05,0.033);
-      tCirc(g,0.21,-0.11,0.033); tCirc(g,0.21,0.01,0.033);
-      /* sticks */
-      tCirc(g,-0.05,0.10,0.045); tCirc(g,0.06,0.10,0.045);
-    }},
-  { id:'phone', name:'Phone', cat:'teen', draw:function(g){
-      tRect(g,-0.19,-0.40,0.38,0.80);
-      tRect(g,-0.155,-0.33,0.31,0.62);
-      tLine(g,-0.05,-0.365,0.05,-0.365);
-      tCirc(g,0,0.355,0.028);
-      /* heart on screen */
-      var sz=0.20, cx=0, cy=-0.02, top=cy-sz*0.28;
-      g.beginPath();
-      g.moveTo(cx, cy+sz*0.42);
-      g.bezierCurveTo(cx-sz*0.75, cy-sz*0.1, cx-sz*0.42, top-sz*0.34, cx, top);
-      g.bezierCurveTo(cx+sz*0.42, top-sz*0.34, cx+sz*0.75, cy-sz*0.1, cx, cy+sz*0.42);
-      g.closePath(); g.stroke();
-      tLine(g,-0.10,0.16,0.10,0.16); tLine(g,-0.07,0.22,0.07,0.22);
-    }},
-  { id:'basketball', name:'Basketball', cat:'teen', draw:function(g){
-      tCirc(g,-0.06,0.14,0.20);
-      tLine(g,-0.26,0.14,0.14,0.14);
-      tCurve(g,[-0.06,-0.06, -0.16,0.02, -0.16,0.26, -0.06,0.34]);
-      tCurve(g,[-0.06,-0.06, 0.04,0.02, 0.04,0.26, -0.06,0.34]);
-      /* hoop and backboard */
-      tRect(g,0.10,-0.44,0.34,0.24);
-      tRect(g,0.20,-0.34,0.14,0.10);
-      tLine(g,0.16,-0.20,0.38,-0.20);
-      tCurve(g,[0.16,-0.20, 0.18,-0.10, 0.36,-0.10, 0.38,-0.20]);
-      tLine(g,0.21,-0.20,0.23,-0.11); tLine(g,0.27,-0.20,0.27,-0.10);
-      tLine(g,0.33,-0.20,0.31,-0.11);
-    }},
-  { id:'camera', name:'Camera', cat:'teen', draw:function(g){
-      tCurve(g,[-0.38,-0.14, -0.40,-0.16, -0.40,0.22, -0.34,0.24]);
-      tLine(g,-0.34,0.24,0.34,0.24);
-      tCurve(g,[0.34,0.24, 0.40,0.22, 0.40,-0.16, 0.38,-0.14]);
-      tLine(g,-0.38,-0.14,0.38,-0.14);
-      tPoly(g,[[-0.12,-0.14],[-0.08,-0.24],[0.08,-0.24],[0.12,-0.14]],false);
-      tCirc(g,0,0.05,0.155); tCirc(g,0,0.05,0.105); tCirc(g,0,0.05,0.05);
-      tCirc(g,-0.28,-0.05,0.035);
-      tRect(g,0.20,-0.09,0.12,0.05);
-    }},
-  { id:'shades', name:'Sunglasses', cat:'teen', draw:function(g){
-      tCurve(g,[-0.42,-0.06, -0.40,0.16, -0.24,0.20, -0.14,0.10]);
-      tCurve(g,[-0.14,0.10, -0.09,0.02, -0.07,-0.04, -0.06,-0.06]);
-      tLine(g,-0.42,-0.06,-0.06,-0.06);
-      tCurve(g,[0.42,-0.06, 0.40,0.16, 0.24,0.20, 0.14,0.10]);
-      tCurve(g,[0.14,0.10, 0.09,0.02, 0.07,-0.04, 0.06,-0.06]);
-      tLine(g,0.42,-0.06,0.06,-0.06);
-      tCurve(g,[-0.06,-0.06, -0.02,-0.10, 0.02,-0.10, 0.06,-0.06]);
-      tLine(g,-0.42,-0.06,-0.48,-0.14); tLine(g,0.42,-0.06,0.48,-0.14);
-      tLine(g,-0.36,0.02,-0.16,0.02); tLine(g,0.36,0.02,0.16,0.02);
-    }},
-  { id:'boombox', name:'Boombox', cat:'teen', draw:function(g){
-      tRect(g,-0.42,-0.20,0.84,0.44);
-      tCirc(g,-0.24,0.02,0.135); tCirc(g,-0.24,0.02,0.06);
-      tCirc(g,0.24,0.02,0.135); tCirc(g,0.24,0.02,0.06);
-      tRect(g,-0.10,-0.14,0.20,0.12);
-      tLine(g,-0.10,0.06,0.10,0.06); tLine(g,-0.10,0.12,0.10,0.12);
-      tCirc(g,-0.06,0.18,0.022); tCirc(g,0.06,0.18,0.022);
-      /* handle */
-      tCurve(g,[-0.26,-0.20, -0.24,-0.36, 0.24,-0.36, 0.26,-0.20]);
-      /* notes */
-      tCirc(g,0.36,-0.34,0.03); tLine(g,0.388,-0.34,0.40,-0.44);
-    }},
-
-  /* ================= GROWN-UP ================= */
-  { id:'portrait', name:'Portrait', cat:'adult', draw:function(g){
-      /* head */
-      tCurve(g,[-0.15,-0.10, -0.16,0.06, -0.10,0.22, 0.00,0.28]);
-      tCurve(g,[0.00,0.28, 0.10,0.22, 0.16,0.06, 0.15,-0.10]);
-      /* hair: crown, then a long fall either side */
-      tCurve(g,[-0.155,-0.10, -0.20,-0.34, 0.00,-0.46, 0.155,-0.32]);
-      tCurve(g,[0.155,-0.32, 0.20,-0.22, 0.19,-0.15, 0.155,-0.10]);
-      tCurve(g,[-0.195,-0.22, -0.28,-0.02, -0.27,0.20, -0.23,0.35]);
-      tCurve(g,[0.19,-0.20, 0.28,-0.02, 0.27,0.20, 0.23,0.35]);
-      tCurve(g,[-0.15,-0.19, -0.06,-0.30, 0.06,-0.28, 0.13,-0.17]);
-      /* brows */
-      tCurve(g,[-0.115,-0.06, -0.09,-0.09, -0.05,-0.09, -0.03,-0.06]);
-      tCurve(g,[0.115,-0.06, 0.09,-0.09, 0.05,-0.09, 0.03,-0.06]);
-      /* eyes */
-      tCurve(g,[-0.115,-0.01, -0.09,-0.045, -0.05,-0.045, -0.03,-0.01]);
-      tCurve(g,[-0.115,-0.01, -0.09,0.02, -0.05,0.02, -0.03,-0.01]);
-      tCirc(g,-0.072,-0.012,0.019);
-      tCurve(g,[0.03,-0.01, 0.05,-0.045, 0.09,-0.045, 0.115,-0.01]);
-      tCurve(g,[0.03,-0.01, 0.05,0.02, 0.09,0.02, 0.115,-0.01]);
-      tCirc(g,0.072,-0.012,0.019);
-      /* nose and lips */
-      tCurve(g,[-0.015,0.04, -0.03,0.10, -0.02,0.13, 0.015,0.13]);
-      tCurve(g,[-0.05,0.185, -0.02,0.165, 0.02,0.165, 0.05,0.185]);
-      tCurve(g,[-0.05,0.185, -0.02,0.215, 0.02,0.215, 0.05,0.185]);
-      /* neck and shoulders */
-      tLine(g,-0.06,0.28,-0.07,0.36); tLine(g,0.06,0.28,0.07,0.36);
-      tCurve(g,[-0.07,0.36, -0.22,0.40, -0.30,0.44, -0.33,0.50]);
-      tCurve(g,[0.07,0.36, 0.22,0.40, 0.30,0.44, 0.33,0.50]);
-    }},
-  { id:'realeye', name:'Eye study', cat:'adult', draw:function(g){
-      tCurve(g,[-0.40,0.02, -0.24,-0.20, 0.18,-0.22, 0.38,0.00]);
-      tCurve(g,[-0.40,0.02, -0.22,0.18, 0.16,0.18, 0.38,0.00]);
-      tCirc(g,-0.02,-0.01,0.145);
-      tCirc(g,-0.02,-0.01,0.062);
-      tCirc(g,-0.07,-0.07,0.038);
-      tCirc(g,0.06,0.05,0.018);
-      /* iris fibres */
-      for(var i=0;i<12;i++){
-        var a=(Math.PI*2/12)*i;
-        tLine(g,-0.02+Math.cos(a)*0.068,-0.01+Math.sin(a)*0.068,
-                -0.02+Math.cos(a)*0.138,-0.01+Math.sin(a)*0.138);
-      }
-      /* lashes */
-      tCurve(g,[-0.40,0.02, -0.46,-0.02, -0.50,-0.06, -0.51,-0.10]);
-      tCurve(g,[-0.24,-0.18, -0.26,-0.26, -0.30,-0.31, -0.34,-0.33]);
-      tCurve(g,[0.02,-0.22, 0.02,-0.30, 0.00,-0.36, -0.03,-0.39]);
-      tCurve(g,[0.26,-0.14, 0.30,-0.21, 0.34,-0.25, 0.38,-0.27]);
-      /* brow */
-      tCurve(g,[-0.38,-0.30, -0.14,-0.42, 0.18,-0.40, 0.40,-0.28]);
-      tCurve(g,[-0.38,-0.30, -0.12,-0.36, 0.18,-0.34, 0.40,-0.28]);
-      /* lower lid crease */
-      tCurve(g,[-0.34,0.10, -0.16,0.24, 0.14,0.24, 0.34,0.08]);
-    }},
-  { id:'horse', name:'Horse', cat:'adult', draw:function(g){
-      tCurve(g,[-0.02,-0.36, 0.12,-0.34, 0.20,-0.22, 0.22,-0.08]);
-      tCurve(g,[0.22,-0.08, 0.26,0.06, 0.30,0.20, 0.28,0.32]);
-      tCurve(g,[0.28,0.32, 0.22,0.40, 0.10,0.40, 0.04,0.34]);
-      tCurve(g,[0.04,0.34, -0.02,0.22, -0.08,0.06, -0.12,-0.06]);
-      tCurve(g,[-0.12,-0.06, -0.16,-0.22, -0.14,-0.32, -0.02,-0.36]);
-      /* ears */
-      tPoly(g,[[-0.06,-0.34],[-0.04,-0.48],[0.06,-0.36]],false);
-      tPoly(g,[[0.08,-0.32],[0.14,-0.45],[0.17,-0.30]],false);
-      /* mane */
-      tCurve(g,[-0.10,-0.34, -0.26,-0.30, -0.36,-0.12, -0.34,0.06]);
-      tCurve(g,[-0.34,0.06, -0.32,0.22, -0.24,0.34, -0.16,0.40]);
-      tCurve(g,[-0.12,-0.14, -0.24,-0.06, -0.26,0.10, -0.20,0.24]);
-      /* eye, nostril, mouth */
-      tEll(g,0.06,-0.16,0.045,0.030,-0.2); tCirc(g,0.06,-0.16,0.015);
-      tCirc(g,0.20,0.30,0.022);
-      tCurve(g,[0.12,0.36, 0.18,0.36, 0.24,0.34, 0.26,0.31]);
-      tCurve(g,[0.02,-0.28, 0.10,-0.26, 0.16,-0.20, 0.18,-0.14]);
-    }},
-  { id:'wolf', name:'Wolf', cat:'adult', draw:function(g){
-      /* profile - far easier to read as a wolf than a front view */
-      tCurve(g,[-0.30,0.16, -0.28,-0.04, -0.18,-0.18, -0.04,-0.22]);
-      tCurve(g,[-0.04,-0.22, 0.08,-0.24, 0.16,-0.18, 0.20,-0.10]);
-      tCurve(g,[0.20,-0.10, 0.30,-0.05, 0.38,-0.01, 0.42,0.03]);
-      tCurve(g,[0.42,0.03, 0.45,0.07, 0.42,0.11, 0.37,0.10]);
-      tCurve(g,[0.37,0.10, 0.28,0.13, 0.20,0.15, 0.14,0.17]);
-      tCurve(g,[0.14,0.17, 0.06,0.25, -0.04,0.31, -0.14,0.33]);
-      tCurve(g,[-0.14,0.33, -0.26,0.33, -0.32,0.26, -0.30,0.16]);
-      /* ears */
-      tPoly(g,[[-0.16,-0.18],[-0.21,-0.45],[0.00,-0.26]],false);
-      tPoly(g,[[0.02,-0.23],[0.07,-0.45],[0.17,-0.21]],false);
-      tLine(g,-0.15,-0.21,-0.18,-0.38);
-      /* eye and brow */
-      tPoly(g,[[0.02,-0.06],[0.11,-0.08],[0.10,-0.02],[0.02,-0.01]]);
-      tCirc(g,0.065,-0.045,0.016);
-      tLine(g,0.00,-0.11,0.13,-0.12);
-      /* nose and mouth */
-      tCirc(g,0.405,0.045,0.020);
-      tCurve(g,[0.37,0.10, 0.30,0.13, 0.24,0.15, 0.20,0.14]);
-      tPoly(g,[[0.28,0.14],[0.30,0.20],[0.33,0.13]],false);
-      /* neck ruff */
-      tPoly(g,[[-0.30,0.08],[-0.41,0.15],[-0.29,0.19]],false);
-      tPoly(g,[[-0.27,0.25],[-0.35,0.37],[-0.18,0.31]],false);
-      tPoly(g,[[-0.06,0.30],[-0.10,0.42],[0.04,0.33]],false);
-    }},
-  { id:'koi', name:'Koi', cat:'adult', draw:function(g){
-      tCurve(g,[-0.34,0.06, -0.30,-0.10, -0.14,-0.20, 0.02,-0.18]);
-      tCurve(g,[0.02,-0.18, 0.18,-0.15, 0.26,-0.04, 0.28,0.06]);
-      tCurve(g,[0.28,0.06, 0.30,0.16, 0.22,0.24, 0.10,0.26]);
-      tCurve(g,[0.10,0.26, -0.06,0.28, -0.24,0.22, -0.34,0.06]);
-      /* flowing tail */
-      tCurve(g,[0.26,0.02, 0.38,-0.08, 0.46,-0.20, 0.44,-0.30]);
-      tCurve(g,[0.44,-0.30, 0.34,-0.24, 0.28,-0.12, 0.27,-0.03]);
-      tCurve(g,[0.28,0.12, 0.40,0.18, 0.48,0.30, 0.44,0.40]);
-      tCurve(g,[0.44,0.40, 0.34,0.32, 0.28,0.22, 0.27,0.16]);
-      /* fins */
-      tCurve(g,[-0.12,-0.19, -0.10,-0.32, 0.00,-0.38, 0.08,-0.34]);
-      tCurve(g,[-0.10,0.24, -0.06,0.36, 0.04,0.42, 0.12,0.38]);
-      /* eye, mouth, whiskers, scales */
-      tCirc(g,-0.24,-0.02,0.032); tCirc(g,-0.24,-0.02,0.012);
-      tCurve(g,[-0.34,0.06, -0.36,0.10, -0.33,0.13, -0.30,0.12]);
-      tCurve(g,[-0.34,0.08, -0.42,0.14, -0.44,0.22, -0.42,0.28]);
-      for(var i=0;i<3;i++){
-        tCurve(g,[-0.10+i*0.11,-0.14, -0.06+i*0.11,-0.04, -0.06+i*0.11,0.10, -0.10+i*0.11,0.20]);
-      }
-    }},
-  { id:'lighthouse', name:'Lighthouse', cat:'adult', draw:function(g){
-      tPoly(g,[[-0.13,0.30],[-0.09,-0.20],[0.09,-0.20],[0.13,0.30]],false);
-      tRect(g,-0.11,-0.28,0.22,0.08);
-      tRect(g,-0.075,-0.40,0.15,0.12);
-      tPoly(g,[[-0.10,-0.40],[0,-0.50],[0.10,-0.40]],false);
-      tLine(g,-0.075,-0.34,0.075,-0.34);
-      /* light beams */
-      tLine(g,-0.075,-0.36,-0.34,-0.44); tLine(g,-0.075,-0.32,-0.34,-0.24);
-      tLine(g,0.075,-0.36,0.34,-0.44); tLine(g,0.075,-0.32,0.34,-0.24);
-      /* stripes */
-      tLine(g,-0.115,0.10,0.115,0.10); tLine(g,-0.10,-0.04,0.10,-0.04);
-      /* rocks and sea */
-      tCurve(g,[-0.42,0.34, -0.28,0.26, -0.14,0.30, -0.13,0.30]);
-      tCurve(g,[0.13,0.30, 0.16,0.28, 0.30,0.26, 0.42,0.34]);
-      tCurve(g,[-0.48,0.40, -0.30,0.36, -0.10,0.40, 0.10,0.38]);
-      tCurve(g,[0.10,0.38, 0.28,0.36, 0.40,0.40, 0.48,0.38]);
-      tCurve(g,[-0.48,0.48, -0.28,0.44, -0.08,0.48, 0.12,0.46]);
-      tCurve(g,[0.12,0.46, 0.30,0.44, 0.40,0.48, 0.48,0.46]);
-    }},
-  { id:'feather', name:'Feather', cat:'adult', draw:function(g){
-      tCurve(g,[0.06,0.46, 0.02,0.20, -0.02,-0.10, -0.04,-0.44]);
-      tCurve(g,[-0.04,-0.44, 0.10,-0.34, 0.18,-0.12, 0.16,0.06]);
-      tCurve(g,[0.16,0.06, 0.14,0.20, 0.10,0.30, 0.06,0.34]);
-      tCurve(g,[-0.04,-0.44, -0.18,-0.32, -0.24,-0.10, -0.20,0.08]);
-      tCurve(g,[-0.20,0.08, -0.16,0.22, -0.08,0.30, 0.02,0.32]);
-      /* barbs */
-      for(var i=0;i<9;i++){
-        var t=i/9, y=-0.36+t*0.66, sp=Math.sin(t*Math.PI)*0.17;
-        tLine(g, -0.03+t*0.05, y, -0.03+t*0.05-sp, y+0.06);
-        tLine(g, -0.03+t*0.05, y, -0.03+t*0.05+sp*0.9, y+0.05);
-      }
-    }},
-  { id:'animehero', name:'Hero', cat:'anime', draw:function(g){
-      /* head */
-      tCurve(g,[-0.15,-0.12, -0.15,0.00, -0.09,0.12, 0,0.16, 0.09,0.12, 0.15,0.00, 0.15,-0.12]);
-      /* swept spiky hair */
-      tPoly(g,[[-0.15,-0.12],[-0.22,-0.26],[-0.12,-0.24],[-0.15,-0.40],[-0.02,-0.28],
-               [0.02,-0.44],[0.08,-0.28],[0.17,-0.38],[0.14,-0.23],[0.22,-0.25],[0.15,-0.12]],false);
-      tAnimeEye(g,-0.078,-0.015,0.058,0.052);
-      tAnimeEye(g,0.078,-0.015,0.058,0.052);
-      tLine(g,-0.13,-0.09,-0.035,-0.07); tLine(g,0.13,-0.09,0.035,-0.07);
-      tLine(g,0,0.045,0.014,0.075);
-      tCurve(g,[-0.04,0.115, -0.015,0.145, 0.015,0.145, 0.04,0.115]);
-      /* neck, shoulders, collar */
-      tLine(g,-0.05,0.16,-0.05,0.22); tLine(g,0.05,0.16,0.05,0.22);
-      tCurve(g,[-0.05,0.22, -0.20,0.26, -0.28,0.33, -0.30,0.44]);
-      tCurve(g,[0.05,0.22, 0.20,0.26, 0.28,0.33, 0.30,0.44]);
-      tPoly(g,[[-0.05,0.22],[0,0.31],[0.05,0.22]],false);
-      /* cape flaring behind */
-      tCurve(g,[-0.24,0.28, -0.40,0.34, -0.46,0.44, -0.44,0.50]);
-      tCurve(g,[0.24,0.28, 0.40,0.34, 0.46,0.44, 0.44,0.50]);
-      /* raised fist */
-      tCirc(g,0.33,0.16,0.065);
-      tLine(g,0.30,0.22,0.28,0.30);
-      tLine(g,0.29,0.13,0.37,0.13);
-    }},
-  { id:'animemage', name:'Mage', cat:'anime', draw:function(g){
-      tCurve(g,[-0.13,-0.06, -0.13,0.05, -0.08,0.15, 0,0.19, 0.08,0.15, 0.13,0.05, 0.13,-0.06]);
-      /* hood: wider than the head, opening framing the face */
-      tCurve(g,[-0.24,0.06, -0.27,-0.24, -0.09,-0.42, 0.01,-0.44]);
-      tCurve(g,[0.01,-0.44, 0.13,-0.38, 0.25,-0.20, 0.24,0.06]);
-      tCurve(g,[-0.24,0.06, -0.18,-0.14, 0.18,-0.14, 0.24,0.06]);
-      tCurve(g,[-0.16,-0.09, -0.10,-0.19, 0.10,-0.19, 0.16,-0.09]);
-      /* robe falling to the shoulders */
-      tCurve(g,[-0.24,0.06, -0.30,0.22, -0.33,0.36, -0.33,0.48]);
-      tCurve(g,[0.24,0.06, 0.30,0.22, 0.33,0.36, 0.33,0.48]);
-      tCurve(g,[-0.08,0.20, -0.16,0.30, -0.18,0.40, -0.17,0.48]);
-      tCurve(g,[0.08,0.20, 0.16,0.30, 0.18,0.40, 0.17,0.48]);
-      tAnimeEye(g,-0.068,0.015,0.048,0.050);
-      tAnimeEye(g,0.068,0.015,0.048,0.050);
-      tCurve(g,[-0.030,0.105, -0.012,0.135, 0.012,0.135, 0.030,0.105]);
-      /* staff with an orb */
-      tLine(g,0.40,-0.42,0.34,0.50);
-      tCirc(g,0.41,-0.46,0.055);
-      tStar(g,0.41,-0.46,0.028);
-      tStar(g,0.28,-0.34,0.024); tStar(g,0.48,-0.32,0.018);
-    }},
-  { id:'animeknight', name:'Knight', cat:'anime', draw:function(g){
-      /* helm */
-      tCurve(g,[-0.16,0.02, -0.17,-0.16, -0.10,-0.30, 0,-0.32]);
-      tCurve(g,[0,-0.32, 0.10,-0.30, 0.17,-0.16, 0.16,0.02]);
-      tCurve(g,[-0.16,0.02, -0.12,0.14, 0.12,0.14, 0.16,0.02]);
-      /* visor slit and breathing holes */
-      tRect(g,-0.125,-0.06,0.25,0.055);
-      tLine(g,0,-0.06,0,-0.005);
-      tCirc(g,-0.05,0.065,0.016); tCirc(g,0,0.065,0.016); tCirc(g,0.05,0.065,0.016);
-      /* plume */
-      tCurve(g,[0,-0.32, 0.02,-0.44, -0.06,-0.50, -0.12,-0.46]);
-      tCurve(g,[0,-0.32, -0.04,-0.42, -0.10,-0.44, -0.14,-0.42]);
-      /* pauldrons and chest */
-      tCurve(g,[-0.13,0.16, -0.28,0.20, -0.34,0.28, -0.34,0.38]);
-      tCurve(g,[0.13,0.16, 0.28,0.20, 0.34,0.28, 0.34,0.38]);
-      tCurve(g,[-0.30,0.22, -0.36,0.26, -0.37,0.32, -0.34,0.36]);
-      tLine(g,-0.13,0.16,0.13,0.16);
-      tCurve(g,[-0.20,0.28, 0,0.34, 0.20,0.28, 0.20,0.28]);
-      /* sword held upright */
-      tLine(g,0.36,-0.40,0.36,0.16);
-      tLine(g,0.31,-0.40,0.31,0.16);
-      tPoly(g,[[0.31,-0.40],[0.335,-0.50],[0.36,-0.40]],false);
-      tRect(g,0.26,0.16,0.15,0.045);
-      tLine(g,0.335,0.205,0.335,0.30);
-      tCirc(g,0.335,0.325,0.028);
-    }},
-  { id:'animepilot', name:'Mech pilot', cat:'anime', draw:function(g){
-      tCurve(g,[-0.15,-0.06, -0.15,0.06, -0.09,0.18, 0,0.22, 0.09,0.18, 0.15,0.06, 0.15,-0.06]);
-      /* helmet shell with a raised visor */
-      tCurve(g,[-0.19,-0.02, -0.20,-0.28, 0.20,-0.28, 0.19,-0.02]);
-      tCurve(g,[-0.19,-0.10, -0.14,-0.20, 0.14,-0.20, 0.19,-0.10]);
-      tLine(g,-0.19,-0.02,-0.15,-0.02); tLine(g,0.19,-0.02,0.15,-0.02);
-      /* ear pods and antenna */
-      tCirc(g,-0.20,-0.06,0.045); tCirc(g,0.20,-0.06,0.045);
-      tLine(g,0.16,-0.26,0.26,-0.42); tCirc(g,0.27,-0.44,0.024);
-      tAnimeEye(g,-0.072,0.03,0.052,0.050);
-      tAnimeEye(g,0.072,0.03,0.052,0.050);
-      tCurve(g,[-0.034,0.125, -0.012,0.155, 0.012,0.155, 0.034,0.125]);
-      /* flight suit collar */
-      tLine(g,-0.05,0.22,-0.05,0.28); tLine(g,0.05,0.22,0.05,0.28);
-      tCurve(g,[-0.05,0.28, -0.22,0.32, -0.30,0.38, -0.32,0.48]);
-      tCurve(g,[0.05,0.28, 0.22,0.32, 0.30,0.38, 0.32,0.48]);
-      tRect(g,-0.10,0.34,0.20,0.07);
-      tCirc(g,-0.19,0.40,0.026); tCirc(g,0.19,0.40,0.026);
-    }},
-  { id:'animesamurai', name:'Samurai', cat:'anime', draw:function(g){
-      tCurve(g,[-0.14,-0.08, -0.14,0.04, -0.085,0.16, 0,0.20, 0.085,0.16, 0.14,0.04, 0.14,-0.08]);
-      /* pulled-back hair with a topknot */
-      tCurve(g,[-0.14,-0.08, -0.19,-0.28, -0.06,-0.36, 0,-0.36]);
-      tCurve(g,[0,-0.36, 0.06,-0.36, 0.19,-0.28, 0.14,-0.08]);
-      tEll(g,0,-0.44,0.055,0.075,0);
-      tLine(g,-0.035,-0.37,0.035,-0.37);
-      tAnimeEye(g,-0.072,0.005,0.052,0.044);
-      tAnimeEye(g,0.072,0.005,0.052,0.044);
-      tLine(g,-0.12,-0.05,-0.03,-0.035); tLine(g,0.12,-0.05,0.03,-0.035);
-      tLine(g,0,0.075,0.014,0.105);
-      tCurve(g,[-0.036,0.145, -0.012,0.165, 0.012,0.165, 0.036,0.145]);
-      /* kimono collar crossing over */
-      tLine(g,-0.05,0.20,-0.05,0.26); tLine(g,0.05,0.20,0.05,0.26);
-      tCurve(g,[-0.05,0.26, -0.22,0.31, -0.30,0.38, -0.32,0.48]);
-      tCurve(g,[0.05,0.26, 0.22,0.31, 0.30,0.38, 0.32,0.48]);
-      tPoly(g,[[-0.05,0.26],[0.02,0.44],[0.09,0.28]],false);
-      tPoly(g,[[0.05,0.26],[-0.02,0.44],[-0.09,0.28]],false);
-      /* katana across the back */
-      tCurve(g,[-0.40,0.16, -0.20,0.02, 0.10,-0.10, 0.34,-0.16]);
-      tCurve(g,[-0.40,0.22, -0.20,0.08, 0.10,-0.04, 0.34,-0.10]);
-      tRect(g,-0.46,0.14,0.10,0.11);
-    }},
-  { id:'animewitch', name:'Little witch', cat:'anime', draw:function(g){
-      tCurve(g,[-0.14,-0.04, -0.14,0.08, -0.085,0.19, 0,0.23, 0.085,0.19, 0.14,0.08, 0.14,-0.04]);
-      /* wide-brimmed pointed hat */
-      tCurve(g,[-0.30,-0.10, -0.10,-0.16, 0.10,-0.16, 0.30,-0.10]);
-      tCurve(g,[-0.30,-0.10, -0.10,-0.03, 0.10,-0.03, 0.30,-0.10]);
-      tCurve(g,[-0.17,-0.13, -0.20,-0.34, -0.06,-0.44, 0.02,-0.48]);
-      tCurve(g,[0.02,-0.48, 0.10,-0.40, 0.15,-0.24, 0.17,-0.13]);
-      tCurve(g,[-0.17,-0.13, -0.06,-0.18, 0.08,-0.18, 0.17,-0.13]);
-      tStar(g,0.06,-0.30,0.035);
-      /* hair either side */
-      tCurve(g,[-0.15,-0.02, -0.22,0.12, -0.21,0.28, -0.18,0.38]);
-      tCurve(g,[0.15,-0.02, 0.22,0.12, 0.21,0.28, 0.18,0.38]);
-      tAnimeEye(g,-0.072,0.055,0.052,0.056);
-      tAnimeEye(g,0.072,0.055,0.052,0.056);
-      tCirc(g,-0.115,0.13,0.022); tCirc(g,0.115,0.13,0.022);
-      tCurve(g,[-0.032,0.145, -0.012,0.175, 0.012,0.175, 0.032,0.145]);
-      /* broom */
-      tLine(g,-0.44,0.44,0.28,0.30);
-      tPoly(g,[[0.28,0.30],[0.44,0.24],[0.46,0.38],[0.30,0.38]],false);
-      tLine(g,0.33,0.28,0.36,0.38); tLine(g,0.39,0.26,0.41,0.38);
-    }},
-  { id:'animebot', name:'Robot friend', cat:'anime', draw:function(g){
-      /* rounded head */
-      tCurve(g,[-0.20,-0.06, -0.21,-0.26, 0.21,-0.26, 0.20,-0.06]);
-      tCurve(g,[-0.20,-0.06, -0.19,0.10, 0.19,0.10, 0.20,-0.06]);
-      /* screen face */
-      tCurve(g,[-0.15,-0.04, -0.15,-0.18, 0.15,-0.18, 0.15,-0.04]);
-      tCurve(g,[-0.15,-0.04, -0.14,0.05, 0.14,0.05, 0.15,-0.04]);
-      tEll(g,-0.065,-0.07,0.032,0.042,0); tEll(g,0.065,-0.07,0.032,0.042,0);
-      tCirc(g,-0.065,-0.07,0.014); tCirc(g,0.065,-0.07,0.014);
-      tCurve(g,[-0.045,0.00, -0.015,0.03, 0.015,0.03, 0.045,0.00]);
-      /* antenna + ear discs */
-      tLine(g,0,-0.26,0,-0.36); tCirc(g,0,-0.39,0.035);
-      tCirc(g,-0.24,-0.08,0.045); tCirc(g,0.24,-0.08,0.045);
-      /* body */
-      tCurve(g,[-0.17,0.14, -0.19,0.30, -0.17,0.40, -0.14,0.44]);
-      tCurve(g,[0.17,0.14, 0.19,0.30, 0.17,0.40, 0.14,0.44]);
-      tLine(g,-0.17,0.14,0.17,0.14);
-      tLine(g,-0.14,0.44,0.14,0.44);
-      tCirc(g,0,0.27,0.06);
-      tLine(g,-0.09,0.38,0.09,0.38);
-      /* arms */
-      tCurve(g,[-0.17,0.19, -0.30,0.24, -0.34,0.32, -0.32,0.38]);
-      tCurve(g,[0.17,0.19, 0.30,0.24, 0.34,0.32, 0.32,0.38]);
-      tCirc(g,-0.33,0.41,0.038); tCirc(g,0.33,0.41,0.038);
-    }},
-  { id:'animerider', name:'Dragon friend', cat:'anime', draw:function(g){
-      /* child bust, sitting left of centre */
-      var cx=-0.12;
-      tCurve(g,[cx-0.14,-0.10, cx-0.14,0.02, cx-0.085,0.14, cx,0.18, cx+0.085,0.14, cx+0.14,0.02, cx+0.14,-0.10]);
-      tCurve(g,[cx-0.14,-0.10, cx-0.20,-0.32, cx-0.06,-0.40, cx,-0.40, cx+0.06,-0.40, cx+0.20,-0.32, cx+0.14,-0.10]);
-      tCurve(g,[cx-0.14,-0.16, cx-0.08,-0.28, cx+0.04,-0.30, cx+0.10,-0.18]);
-      tAnimeEye(g,cx-0.070,-0.005,0.050,0.052);
-      tAnimeEye(g,cx+0.070,-0.005,0.050,0.052);
-      tCurve(g,[cx-0.030,0.095, cx-0.012,0.125, cx+0.012,0.125, cx+0.030,0.095]);
-      tLine(g,cx-0.05,0.18,cx-0.05,0.24); tLine(g,cx+0.05,0.18,cx+0.05,0.24);
-      tCurve(g,[cx-0.05,0.24, cx-0.20,0.28, cx-0.28,0.35, cx-0.30,0.48]);
-      tCurve(g,[cx+0.05,0.24, cx+0.15,0.27, cx+0.21,0.33, cx+0.23,0.42]);
-      /* small dragon perched on the shoulder */
-      var dx=0.26, dy=0.08;
-      tCurve(g,[dx-0.09,dy+0.17, dx-0.12,dy+0.05, dx-0.05,dy-0.05, dx+0.03,dy-0.05]);
-      tCurve(g,[dx+0.03,dy-0.05, dx+0.11,dy-0.05, dx+0.15,dy+0.03, dx+0.13,dy+0.11]);
-      tCurve(g,[dx+0.13,dy+0.11, dx+0.10,dy+0.19, dx+0.01,dy+0.22, dx-0.09,dy+0.17]);
-      /* snout and nostril */
-      tCurve(g,[dx+0.14,dy+0.03, dx+0.21,dy+0.02, dx+0.23,dy+0.08, dx+0.19,dy+0.11]);
-      tCirc(g,dx+0.205,dy+0.055,0.011);
-      /* horn, eye, wing, tail */
-      tPoly(g,[[dx+0.04,dy-0.05],[dx+0.01,dy-0.18],[dx+0.11,dy-0.04]],false);
-      tCirc(g,dx+0.085,dy+0.02,0.020);
-      tPoly(g,[[dx-0.02,dy+0.02],[dx-0.11,dy-0.15],[dx+0.05,dy-0.04]],false);
-      tCurve(g,[dx-0.08,dy+0.19, dx-0.15,dy+0.31, dx-0.04,dy+0.40, dx+0.07,dy+0.35]);
-    }},
-  { id:'animeschool', name:'School friend', cat:'anime', draw:function(g){
-      tCurve(g,[-0.15,-0.10, -0.15,0.02, -0.09,0.14, 0,0.18, 0.09,0.14, 0.15,0.02, 0.15,-0.10]);
-      tCurve(g,[-0.15,-0.10, -0.21,-0.34, -0.07,-0.42, 0,-0.42, 0.07,-0.42, 0.21,-0.34, 0.15,-0.10]);
-      /* bobbed hair and a fringe */
-      tCurve(g,[-0.18,-0.16, -0.24,0.02, -0.23,0.16, -0.20,0.26]);
-      tCurve(g,[0.18,-0.16, 0.24,0.02, 0.23,0.16, 0.20,0.26]);
-      tCurve(g,[-0.15,-0.17, -0.09,-0.28, 0.03,-0.30, 0.09,-0.19]);
-      tAnimeEye(g,-0.075,-0.005,0.054,0.056);
-      tAnimeEye(g,0.075,-0.005,0.054,0.056);
-      tCurve(g,[-0.032,0.095, -0.012,0.125, 0.012,0.125, 0.032,0.095]);
-      /* neck and shoulders */
-      tLine(g,-0.05,0.18,-0.05,0.24); tLine(g,0.05,0.18,0.05,0.24);
-      tCurve(g,[-0.05,0.24, -0.21,0.28, -0.29,0.35, -0.31,0.48]);
-      tCurve(g,[0.05,0.24, 0.21,0.28, 0.29,0.35, 0.31,0.48]);
-      /* simple V collar with a bow at the point */
-      tLine(g,-0.05,0.245,0,0.37); tLine(g,0.05,0.245,0,0.37);
-      tLine(g,-0.10,0.28,-0.03,0.42); tLine(g,0.10,0.28,0.03,0.42);
-      tPoly(g,[[-0.055,0.375],[0,0.355],[0.055,0.375],[0,0.415]],false);
-      tCirc(g,0,0.385,0.017);
-    }},
-  { id:'animeathlete', name:'Runner', cat:'anime', draw:function(g){
-      tCurve(g,[-0.14,-0.10, -0.14,0.02, -0.085,0.13, 0,0.17, 0.085,0.13, 0.14,0.02, 0.14,-0.10]);
-      /* ponytail sweeping back */
-      tCurve(g,[-0.14,-0.10, -0.19,-0.32, -0.06,-0.40, 0,-0.40, 0.06,-0.40, 0.19,-0.32, 0.14,-0.10]);
-      tCurve(g,[0.17,-0.24, 0.32,-0.24, 0.42,-0.14, 0.44,0.00]);
-      tCurve(g,[0.44,0.00, 0.40,-0.08, 0.30,-0.14, 0.19,-0.14]);
-      /* headband */
-      tRect(g,-0.17,-0.20,0.34,0.06);
-      tLine(g,-0.17,-0.17,0.17,-0.17);
-      tAnimeEye(g,-0.072,-0.01,0.052,0.050);
-      tAnimeEye(g,0.072,-0.01,0.052,0.050);
-      tCurve(g,[-0.036,0.075, -0.012,0.115, 0.012,0.115, 0.036,0.075]);
-      /* vest and shoulders */
-      tLine(g,-0.05,0.17,-0.05,0.23); tLine(g,0.05,0.17,0.05,0.23);
-      tCurve(g,[-0.05,0.23, -0.20,0.27, -0.28,0.34, -0.30,0.46]);
-      tCurve(g,[0.05,0.23, 0.20,0.27, 0.28,0.34, 0.30,0.46]);
-      tCurve(g,[-0.12,0.26, -0.06,0.36, 0.06,0.36, 0.12,0.26]);
-      tCirc(g,0,0.42,0.045);
-      tLine(g,-0.04,0.42,0.04,0.42);
-    }},
-  { id:'mandala2', name:'Sun mandala', cat:'adult', draw:function(g){
-      tCirc(g,0,0,0.09); tCirc(g,0,0,0.17); tCirc(g,0,0,0.25); tCirc(g,0,0,0.45);
-      for(var i=0;i<16;i++){
-        var a=(Math.PI/8)*i;
-        tPoly(g,[[Math.cos(a)*0.25,Math.sin(a)*0.25],
-                 [Math.cos(a+0.14)*0.38,Math.sin(a+0.14)*0.38],
-                 [Math.cos(a-0.14)*0.38,Math.sin(a-0.14)*0.38]],false);
-        tLine(g,Math.cos(a)*0.09,Math.sin(a)*0.09,Math.cos(a)*0.17,Math.sin(a)*0.17);
-      }
-      for(var j=0;j<8;j++){
-        var b=(Math.PI/4)*j+Math.PI/8;
-        tEll(g,Math.cos(b)*0.21,Math.sin(b)*0.21,0.035,0.055,b+Math.PI/2);
-      }
-    }}
-];
 
 /* ============================================================
    ENVIRONMENTS
@@ -3236,82 +2365,66 @@ var PAPERS = [
     }}
 ];
 
-function renderTemplate(g, w, h, tplId, paperId, opaque){
-  g.save();
-  g.setTransform(1,0,0,1,0,0);
-  if(opaque){ g.fillStyle = '#ffffff'; g.fillRect(0,0,w,h); }
-  else g.clearRect(0,0,w,h);
-  var paper = PAPERS.filter(function(p){ return p.id === paperId; })[0];
-  if(paper) paper.draw(g, w, h);
-  var tpl = TEMPLATES.filter(function(t){ return t.id === tplId; })[0];
-  if(tpl && tpl.id !== 'blank'){
-    var sc = Math.min(w,h) * 0.92;
-    g.translate(w/2, h/2); g.scale(sc, sc);
-    g.strokeStyle = '#3a3350';
-    g.lineWidth = 5 / sc;
-    g.lineCap = 'round'; g.lineJoin = 'round';
-    tpl.draw(g);
-  }
+function renderPaper(g, w, h, paperId){
+  var p = PAPERS.filter(function(x){ return x.id === paperId; })[0];
+  if(!p || p.id === 'plain') return;
+  g.save(); g.setTransform(1,0,0,1,0,0);
+  p.draw(g, w, h);
   g.restore();
 }
 
+/* An icon per set, keyed by the group name derived from the filenames. */
+var SET_ICONS = {
+  'Dinosaur':'🦕',
+  'Dog':'🐶',
+  'Princess':'👑',
+  'Anime character':'🧑',
+  'Anime character single line':'✏️',
+  'Anime outfit':'👕',
+  'Example hot air balloon':'🎈'
+};
+function setIcon(name){ return SET_ICONS[name] || '🖼️'; }
+
 function openTemplates(){
-  if(EXTRA === null){                 /* fetch once, then reopen for real */
-    loadExtraTraces(function(){ openTemplates(); });
+  if(EXTRA === null){                 /* fetch, then open for real */
+    loadExtraTraces(function(list){
+      if(EXTRA === null && (!list || !list.length)) EXTRA = [];  /* genuinely none */
+      openTemplates();
+    });
     return;
   }
-  var cat = S.tplCat || 'all';
   var paper = S.tplPaper || 'plain';
 
   function render(){
-    S.tplCat = cat; S.tplPaper = paper;
-    var list = TEMPLATES.filter(function(t){
-      if(t.id === 'blank') return true;
-      return cat === 'all' || (t.cat || 'easy') === cat;
-    });
+    S.tplPaper = paper;
+    var grp = extraGroups();
     var mine = store.get('mytraces', []);
-    var html = '<h2>Colouring pages</h2><p>Pick a picture to trace over and colour in.</p><div class="pickgrid">';
-    TPL_CATS.forEach(function(c){
-      var n = c.id === 'extra' ? (EXTRA ? EXTRA.length : 0)
-            : c.id === 'mine' ? mine.length
-            : c.id === 'all'
-              ? TEMPLATES.filter(function(t){ return t.id !== 'blank'; }).length
-              : TEMPLATES.filter(function(t){ return (t.cat||'easy') === c.id; }).length;
-      html += '<button data-cat="' + c.id + '" class="' + (cat===c.id?'sel':'') + '">' +
-              '<span class="pe">' + c.emoji + '</span>' + c.name + ' (' + n + ')</button>';
+
+    /* every set is a category in its own right, plus your own traces */
+    var cats = grp.names.map(function(nm){
+      return { id:'set:' + nm, name:nm, emoji:setIcon(nm), count:grp.map[nm].length };
+    });
+    cats.push({ id:'mine', name:'My Traces', emoji:'\u2B50', count:mine.length });
+
+    if(!S.tplCat || !cats.filter(function(c){ return c.id === S.tplCat; }).length){
+      S.tplCat = cats.length ? cats[0].id : 'mine';
+    }
+    var cat = S.tplCat;
+
+    var html = '<h2>Pick a picture</h2>' +
+      '<p>Trace over it and colour it in.</p><div class="pickgrid">';
+    cats.forEach(function(c){
+      html += '<button data-cat="' + c.id + '" class="' + (cat === c.id ? 'sel' : '') + '">' +
+              '<span class="pe">' + c.emoji + '</span>' + c.name + ' (' + c.count + ')</button>';
     });
     html += '</div><p style="margin:10px 0 6px;font-weight:900">Paper</p><div class="pickgrid">';
     PAPERS.forEach(function(p){
-      html += '<button data-paper="' + p.id + '" class="' + (paper===p.id?'sel':'') + '">' + p.name + '</button>';
+      html += '<button data-paper="' + p.id + '" class="' + (paper === p.id ? 'sel' : '') + '">' +
+              p.name + '</button>';
     });
     html += '</div><div class="tplgrid">';
-    if(cat === 'extra'){
-      var ex = EXTRA || [];
-      var grp = extraGroups();
-      if(ex.length && grp.names.length > 1){
-        if(grp.names.indexOf(S.extraSet) === -1) S.extraSet = grp.names[0];
-        html += '</div><p style="margin:10px 0 6px;font-weight:900">Sets</p><div class="pickgrid">';
-        grp.names.forEach(function(nm){
-          html += '<button data-eset="' + nm + '" class="' + (S.extraSet===nm?'sel':'') + '">' +
-                  nm + ' (' + grp.map[nm].length + ')</button>';
-        });
-        html += '</div><div class="tplgrid">';
-      }
-      if(ex.length === 0){
-        html += '<div style="grid-column:1/-1;color:#5b5175;font-weight:600;padding:14px;line-height:1.6">' +
-                'Nothing added yet. A grown-up can drop pictures into the ' +
-                '<b>traces</b> folder of the Playbox project and push them \u2014 ' +
-                'they then appear here on every tablet, with nothing to copy across.</div>';
-      }
-      var show = (grp.names.length > 1 && grp.map[S.extraSet])
-        ? grp.map[S.extraSet] : ex.map(function(_, i){ return i; });
-      show.forEach(function(i){
-        var e = ex[i];
-        html += '<button data-extra="' + i + '"><img src="traces/' + encodeURIComponent(e.file) +
-                '" loading="lazy" style="width:100%;height:66px;object-fit:contain;background:#fff;' +
-                'border-radius:10px;display:block">' + e.name + '</button>';
-      });
-    } else if(cat === 'mine'){
+
+    if(cat === 'mine'){
       if(mine.length === 0){
         html += '<div style="grid-column:1/-1;color:#5b5175;font-weight:600;padding:14px;line-height:1.6">' +
                 'Nothing here yet. Use <b>\uD83D\uDCF7 Import</b> while painting, drag a box round ' +
@@ -3319,29 +2432,45 @@ function openTemplates(){
       }
       mine.forEach(function(it, i){
         html += '<button data-mine="' + i + '"><img src="' + it.data +
-                '" style="width:100%;height:66px;object-fit:contain;background:#fff;border-radius:10px;display:block">' +
-                'Mine ' + (i+1) + '</button>';
+                '" style="width:100%;height:66px;object-fit:contain;background:#fff;' +
+                'border-radius:10px;display:block">Mine ' + (i+1) + '</button>';
       });
     } else {
-      list.forEach(function(t){
-        html += '<button data-tpl="' + t.id + '"><canvas width="150" height="100" data-prev="' + t.id + '"></canvas>' + t.name + '</button>';
+      var setName = cat.slice(4);
+      var idx = grp.map[setName] || [];
+      if(idx.length === 0){
+        html += '<div style="grid-column:1/-1;color:#5b5175;font-weight:600;padding:14px;line-height:1.6">' +
+                'Nothing here yet. A grown-up can drop pictures into the <b>traces</b> folder ' +
+                'of the Playbox project and push them \u2014 they then appear here on every ' +
+                'tablet, with nothing to copy across.</div>';
+      }
+      idx.forEach(function(i){
+        var e = EXTRA[i];
+        html += '<button data-extra="' + i + '"><img src="traces/' + encodeURIComponent(e.file) +
+                '" loading="lazy" style="width:100%;height:66px;object-fit:contain;background:#fff;' +
+                'border-radius:10px;display:block">' + e.name + '</button>';
       });
     }
+
     html += '</div>';
     if(cat === 'mine' && mine.length){
       html += '<div class="sheetrow" style="margin-bottom:10px">' +
-              '<button class="" id="mineDel">\uD83D\uDDD1\uFE0F Delete my traces</button></div>';
+              '<button id="mineDel">\uD83D\uDDD1\uFE0F Delete my traces</button></div>';
     }
-    html += '<div class="sheetrow"><button id="tplNo">Cancel</button></div>';
+    html += '<div class="sheetrow">' +
+            '<button id="tplBlank">\uD83D\uDCC4 No picture</button>' +
+            '<button id="tplNo">Cancel</button></div>';
     showModal(html);
-    bindAll('[data-mine]', function(b){
+
+    bindAll('[data-cat]',   function(b){ S.tplCat = b.getAttribute('data-cat'); render(); });
+    bindAll('[data-paper]', function(b){ paper = b.getAttribute('data-paper'); render(); });
+    bindAll('[data-mine]',  function(b){
       var it = mine[parseInt(b.getAttribute('data-mine'), 10)];
       closeModal();
       startTrace(function(){ applyMyTrace(it); });
     });
-    bindAll('[data-eset]', function(b){ S.extraSet = b.getAttribute('data-eset'); render(); });
     bindAll('[data-extra]', function(b){
-      var it = (EXTRA || [])[parseInt(b.getAttribute('data-extra'), 10)];
+      var it = EXTRA[parseInt(b.getAttribute('data-extra'), 10)];
       closeModal();
       startTrace(function(){ applyExtraTrace(it); });
     });
@@ -3350,32 +2479,23 @@ function openTemplates(){
         store.del('mytraces'); closeModal(); toast('My Traces cleared');
       });
     };
-
-    /* thumbnails run the very same draw code at small size */
-    var prevs = $('sheet').querySelectorAll('canvas[data-prev]');
-    for(var i = 0; i < prevs.length; i++){
-      renderTemplate(prevs[i].getContext('2d'), 150, 100, prevs[i].getAttribute('data-prev'), 'plain', true);
-    }
-    bindAll('[data-cat]', function(b){ cat = b.getAttribute('data-cat'); render(); });
-    bindAll('[data-paper]', function(b){ paper = b.getAttribute('data-paper'); render(); });
-    bindAll('[data-tpl]', function(b){
-      var id = b.getAttribute('data-tpl');
+    $('tplBlank').onclick = function(){
       closeModal();
       startTrace(function(){
-        var g = traceCtx();
         clearTrace();
-        renderTemplate(g, (TC||DC).width, (TC||DC).height, id, paper);
-        g.setTransform(DPR,0,0,DPR,0,0);
-        g.lineCap='round'; g.lineJoin='round';
-        toast('Ready to colour!');
+        if(paper !== 'plain'){
+          var g = traceCtx();
+          renderPaper(g, (TC||DC).width, (TC||DC).height, paper);
+          g.setTransform(DPR,0,0,DPR,0,0);
+        }
+        toast('Blank page');
         afterEdit();
       });
-    });
+    };
     $('tplNo').onclick = closeModal;
   }
   render();
 }
-
 /* wire every element matching sel inside the open sheet */
 function bindAll(sel, fn){
   var els = $('sheet').querySelectorAll(sel);
@@ -3632,7 +2752,12 @@ function toOutline(img, w, h){
   g.putImageData(out, 0, 0);
   return t;
 }
-$('clearBtn').addEventListener('click', function(){ pushUndo(); clearBoard(); toast('Fresh paper!'); });
+$('clearBtn').addEventListener('click', function(){
+  /* this only rubs out the drawing - the trace and the scene stay put,
+     which the old wording did not admit to */
+  pushUndo(); clearBoard();
+  toast('Drawing rubbed out \u2014 use \uD83D\uDCC4 for a blank page');
+});
 $('savePaint').addEventListener('click', function(){
   saveToGallery(flatten($('paintBg'), $('paintCanvas'), $('paintTrace')), 'paint');
 });
@@ -5576,14 +4701,15 @@ requestPersistence();
 go('home');
 
 /* exposed only so the page can be smoke-tested from the console */
-window.__playbox = { S:S, SOUNDS:SOUNDS, TEMPLATES:TEMPLATES, TOOLS:TOOLS, SHAPES:SHAPES,
-                     PRESETS:PRESETS, TPL_CATS:TPL_CATS, SHAPE_CATS:SHAPE_CATS, drawShape:drawShape, GAL_KINDS:GAL_KINDS, ENVIRONMENTS:ENVIRONMENTS,
-                     ENV_CATS:ENV_CATS, renderTemplate:renderTemplate, renderEnv:renderEnv, flatten:flatten,
+window.__playbox = { S:S, SOUNDS:SOUNDS, TOOLS:TOOLS, SHAPES:SHAPES,
+                     PRESETS:PRESETS, SHAPE_CATS:SHAPE_CATS, drawShape:drawShape, GAL_KINDS:GAL_KINDS, ENVIRONMENTS:ENVIRONMENTS,
+                     ENV_CATS:ENV_CATS, renderPaper:renderPaper, renderEnv:renderEnv, flatten:flatten,
                      placeImport:placeImport, toOutline:toOutline, openTemplates:openTemplates,
                      openCropper:openCropper, saveMyTrace:saveMyTrace, exportBackup:exportBackup,
                      loadExtraTraces:loadExtraTraces, keyOutWhite:keyOutWhite,
                      getExtra:function(){ return EXTRA; },
-                     wipSave:wipSave, canvasPNG:canvasPNG, go:go };
+                     wipSave:wipSave, canvasPNG:canvasPNG, go:go,
+                     store:store, blankScene:blankScene, extraGroups:extraGroups, artHasInk:artHasInk };
 
 })();
 </script>
