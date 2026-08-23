@@ -922,7 +922,11 @@ function onCancel(){
   if(OX){ var s = cssSize(OC); OX.clearRect(0,0,s.w,s.h); }
 }
 
-function afterEdit(){ if(S.screen === 'anim') captureFrame(); }
+function afterEdit(){
+  if(S.screen === 'anim'){ captureFrame(); wipDirty.anim = true; }
+  else wipDirty.paint = true;
+  wipSchedule();
+}
 
 function wirePointer(canvasEl){
   canvasEl.addEventListener('pointerdown', onDown);
@@ -2691,6 +2695,7 @@ function enterPaint(){
   bindCanvas($('paintCanvas'), $('paintOverlay'), 'paint');
   fitStack($('paintWrap'), $('paintStack'), $('paintCanvas'), [$('paintOverlay'), $('paintBg')]);
   renderEnv($('paintBg'), S.paintEnv);
+  wipRestorePaint();
   buildRail('paintRail'); buildColors('paintColors'); buildSizes('paintSizes'); buildShapeBar();
   refreshUndoButtons();
 }
@@ -2914,11 +2919,14 @@ function enterAnim(){
   fitStack($('animWrap'), $('animStack'), $('animCanvas'), [$('animOverlay'), $('animOnion'), $('animBg')]);
   renderEnv($('animBg'), S.animEnv);
   buildRail('animRail'); buildColors('animColors'); buildSizes('animSizes');
-  if(S.frames.length === 0) S.frames = [blankFrame()];
-  if(S.frameIdx >= S.frames.length) S.frameIdx = 0;
-  loadFrame(S.frameIdx);
-  buildStrip();
-  refreshUndoButtons();
+  wipRestoreAnim(function(restored){
+    if(!restored && S.frames.length === 0) S.frames = [blankFrame()];
+    if(S.frameIdx >= S.frames.length) S.frameIdx = 0;
+    loadFrame(S.frameIdx);
+    buildStrip();
+    refreshUndoButtons();
+    if(restored) toast('Your cartoon is back');
+  });
 }
 
 function blankFrame(){
@@ -3151,7 +3159,7 @@ function addFrame(){
   captureFrame();
   S.frames.splice(S.frameIdx + 1, 0, blankFrame());
   undoStacks.anim.length = 0; refreshUndoButtons();
-  loadFrame(S.frameIdx + 1); buildStrip();
+  loadFrame(S.frameIdx + 1); buildStrip(); wipDirty.anim = true; wipSchedule();
   toast('New frame');
 }
 
@@ -3164,7 +3172,7 @@ function dupFrame(){
   c.getContext('2d').drawImage(src, 0, 0);
   S.frames.splice(S.frameIdx + 1, 0, c);
   undoStacks.anim.length = 0; refreshUndoButtons();
-  loadFrame(S.frameIdx + 1); buildStrip();
+  loadFrame(S.frameIdx + 1); buildStrip(); wipDirty.anim = true; wipSchedule();
   toast('Copied frame');
 }
 
@@ -3174,7 +3182,7 @@ function delFrame(){
   S.frames.splice(S.frameIdx, 1);
   if(S.frameIdx >= S.frames.length) S.frameIdx = S.frames.length - 1;
   undoStacks.anim.length = 0; refreshUndoButtons();
-  loadFrame(S.frameIdx); buildStrip();
+  loadFrame(S.frameIdx); buildStrip(); wipDirty.anim = true; wipSchedule();
 }
 
 var playTimer = null;
@@ -3271,6 +3279,7 @@ function buildScene(){
   });
   $('sceneStage').style.background = S.sceneBg;
   fitSceneBg();
+  wipRestoreScene();
 }
 
 function fitSceneBg(){
@@ -3292,6 +3301,7 @@ function addSticker(emo){
   o.el = el; stage.appendChild(el);
   S.stickers.push(o);
   placeSticker(o); selectSticker(o); attachDrag(o);
+  wipDirty.scene = true; wipSchedule();
 }
 function placeSticker(o){
   o.el.style.left = o.x + 'px'; o.el.style.top = o.y + 'px';
@@ -3319,7 +3329,7 @@ function attachDrag(o){
     o.x = (e.clientX - r.left) - offX; o.y = (e.clientY - r.top) - offY;
     placeSticker(o);
   });
-  var stop = function(){ dragging = false; };
+  var stop = function(){ dragging = false; wipDirty.scene = true; wipSchedule(); };
   o.el.addEventListener('pointerup', stop);
   o.el.addEventListener('pointercancel', stop);
 }
@@ -3334,12 +3344,12 @@ $('sceneEnvBtn').addEventListener('click', function(){
 function scaleSel(f){
   var o = S.selectedSticker;
   if(!o){ toast('Tap a sticker first'); return; }
-  o.scale = Math.max(0.4, Math.min(5, o.scale*f)); placeSticker(o);
+  o.scale = Math.max(0.4, Math.min(5, o.scale*f)); placeSticker(o); wipDirty.scene = true; wipSchedule();
 }
 function rotSel(d){
   var o = S.selectedSticker;
   if(!o){ toast('Tap a sticker first'); return; }
-  o.rot = (o.rot + d) % 360; placeSticker(o);
+  o.rot = (o.rot + d) % 360; placeSticker(o); wipDirty.scene = true; wipSchedule();
 }
 function deleteSel(){
   var o = S.selectedSticker;
@@ -3347,10 +3357,11 @@ function deleteSel(){
   o.el.parentNode.removeChild(o.el);
   S.stickers = S.stickers.filter(function(s){ return s !== o; });
   S.selectedSticker = null;
+  wipDirty.scene = true; wipSchedule();
 }
 $('clearScene').addEventListener('click', function(){
   S.stickers.forEach(function(s){ if(s.el.parentNode) s.el.parentNode.removeChild(s.el); });
-  S.stickers = []; S.selectedSticker = null; toast('Empty scene!');
+  S.stickers = []; S.selectedSticker = null; wipDirty.scene = true; wipSchedule(); toast('Empty scene!');
 });
 
 function sceneToCanvas(){
@@ -4242,7 +4253,7 @@ function describeStorage(){
 }
 
 var BACKUP_KEYS = ['gallery','mytraces','songs','grid','seqRows','bpm',
-                   'customColors','paintEnv','animEnv','sceneEnv'];
+                   'customColors','paintEnv','animEnv','sceneEnv','wip'];
 
 function exportBackup(){
   var data = { playbox: 1, when: Date.now() };
@@ -4362,11 +4373,154 @@ function loadAnimIntoEditor(it){
 }
 
 /* ============================================================
+   WORK IN PROGRESS
+   Explicit saves already survived a restart. What did not was whatever was
+   on the canvas at the time - so a child who drew for twenty minutes and
+   closed the tab lost the lot. Snapshot it shortly after each edit, and put
+   it back the first time the screen is opened.
+   ============================================================ */
+var wipTimer = null;
+var wipDone = { paint:false, anim:false, scene:false };
+/* Which areas changed since the last snapshot. The save is debounced, so by
+   the time it runs the child may already be on another screen - keying off
+   S.screen meant a drawing was lost if they switched within the delay. */
+var wipDirty = { paint:false, anim:false, scene:false };
+
+/* PNG, not JPEG: the art layer is transparent so the scene shows through, and
+   JPEG would bake a white background into it. */
+function canvasPNG(c, maxW){
+  if(!c || !c.width) return null;
+  var scale = Math.min(1, maxW / c.width);
+  var o = document.createElement('canvas');
+  o.width = Math.max(1, Math.round(c.width * scale));
+  o.height = Math.max(1, Math.round(c.height * scale));
+  o.getContext('2d').drawImage(c, 0, 0, o.width, o.height);
+  try{ return o.toDataURL('image/png'); }catch(e){ return null; }
+}
+
+function wipSave(){
+  if(!wipDirty.paint && !wipDirty.anim && !wipDirty.scene) return;
+  var w = store.get('wip', {}) || {};
+  try{
+    if(wipDirty.paint){
+      var d = canvasPNG($('paintCanvas'), 800);
+      if(d) w.paint = { data:d, env:S.paintEnv };
+    }
+    if(wipDirty.anim && S.frames.length){
+      captureFrame();
+      var fr = [], ok = true;
+      for(var i = 0; i < S.frames.length; i++){
+        var t = canvasPNG(S.frames[i], 300);
+        if(!t){ ok = false; break; }
+        fr.push(t);
+      }
+      if(ok) w.anim = { frames:fr, durs:S.frames.map(frameDur),
+                        idx:S.frameIdx, env:S.animEnv };
+    }
+    if(wipDirty.scene){
+      w.scene = { env:S.sceneEnv, bg:S.sceneBg,
+        items: S.stickers.map(function(o){
+          return { e:o.emo, x:Math.round(o.x), y:Math.round(o.y),
+                   s:Math.round(o.scale*100)/100, r:o.rot };
+        }) };
+    }
+  }catch(e){ return; }
+
+  if(!store.set('wip', w)){
+    /* out of room - the cartoon is by far the biggest part, drop it first */
+    delete w.anim;
+    store.set('wip', w);
+  }
+  wipDirty.paint = wipDirty.anim = wipDirty.scene = false;
+}
+
+function wipSchedule(){
+  clearTimeout(wipTimer);
+  wipTimer = setTimeout(wipSave, 1200);
+}
+
+/* Mobile browsers often kill a tab without firing unload, so snapshot on the
+   way out as well as on a timer. */
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'hidden'){ clearTimeout(wipTimer); wipSave(); }
+});
+window.addEventListener('pagehide', wipSave);
+
+function wipRestorePaint(){
+  if(wipDone.paint) return;
+  wipDone.paint = true;
+  var w = store.get('wip', {}) || {};
+  if(!w.paint || !w.paint.data) return;
+  if(w.paint.env){                  /* the scene it was drawn against */
+    S.paintEnv = w.paint.env;
+    renderEnv($('paintBg'), S.paintEnv);
+  }
+  var img = new Image();
+  img.onload = function(){
+    var z = cssSize(DC);
+    DX.drawImage(img, 0, 0, z.w, z.h);
+    wipDirty.paint = false;      /* putting it back is not an edit */
+    toast('Picked up where you left off');
+  };
+  img.src = w.paint.data;
+}
+
+function wipRestoreAnim(done){
+  if(wipDone.anim){ done(false); return; }
+  wipDone.anim = true;
+  var w = store.get('wip', {}) || {};
+  if(!w.anim || !w.anim.frames || !w.anim.frames.length){ done(false); return; }
+  var srcs = w.anim.frames, loaded = 0;
+  var frames = srcs.map(function(){ return blankFrame(); });
+  srcs.forEach(function(src, i){
+    var im = new Image();
+    im.onload = function(){
+      var g = frames[i].getContext('2d');
+      g.setTransform(1,0,0,1,0,0);
+      g.clearRect(0,0,frames[i].width,frames[i].height);
+      g.drawImage(im, 0, 0, frames[i].width, frames[i].height);
+      if(w.anim.durs && typeof w.anim.durs[i] === 'number') frames[i].dur = w.anim.durs[i];
+      if(++loaded === srcs.length){
+        S.frames = frames;         /* replaces, never appends */
+        S.frameIdx = Math.min(w.anim.idx || 0, frames.length - 1);
+        wipDirty.anim = false;
+        if(w.anim.env){ S.animEnv = w.anim.env; renderEnv($('animBg'), S.animEnv); }
+        done(true);
+      }
+    };
+    im.onerror = function(){ if(++loaded === srcs.length){ S.frames = frames; done(true); } };
+    im.src = src;
+  });
+}
+
+function wipRestoreScene(){
+  if(wipDone.scene) return;
+  wipDone.scene = true;
+  var w = store.get('wip', {}) || {};
+  if(!w.scene || !w.scene.items || !w.scene.items.length) return;
+  if(w.scene.bg) S.sceneBg = w.scene.bg;
+  if(w.scene.env) S.sceneEnv = w.scene.env;
+  /* replace, never append - restoring twice must not double the scene */
+  S.stickers.forEach(function(o){ if(o.el.parentNode) o.el.parentNode.removeChild(o.el); });
+  S.stickers = [];
+  w.scene.items.forEach(function(it){
+    addSticker(it.e);
+    var o = S.stickers[S.stickers.length - 1];
+    o.x = it.x; o.y = it.y; o.scale = it.s; o.rot = it.r;
+    placeSticker(o);
+  });
+  selectSticker(null);
+  wipDirty.scene = false;        /* putting it back is not an edit */
+  toast('Your scene is back');
+}
+
+/* ============================================================
    NAVIGATION / AGE / BOOT
    ============================================================ */
 var TITLES = { home:'Playbox', paint:'Paint', anim:'Animate', scene:'Stickers', music:'Music', gallery:'My Stuff' };
 
 function go(name){
+  wipSave();                     /* flush before the screen changes */
   if(S.screen === 'music' && name !== 'music') stopSequencer();
   if(S.screen === 'anim' && name !== 'anim'){ stopPlay(); if(S.frames.length) captureFrame(); }
   var screens = document.querySelectorAll('.screen');
@@ -4474,7 +4628,8 @@ window.__playbox = { S:S, SOUNDS:SOUNDS, TEMPLATES:TEMPLATES, TOOLS:TOOLS, SHAPE
                      placeImport:placeImport, toOutline:toOutline, openTemplates:openTemplates,
                      openCropper:openCropper, saveMyTrace:saveMyTrace, exportBackup:exportBackup,
                      loadExtraTraces:loadExtraTraces, keyOutWhite:keyOutWhite,
-                     getExtra:function(){ return EXTRA; }, go:go };
+                     getExtra:function(){ return EXTRA; },
+                     wipSave:wipSave, canvasPNG:canvasPNG, go:go };
 
 })();
 </script>

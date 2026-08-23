@@ -145,6 +145,12 @@ survives closing the app and rebooting the tablet. It does *not* survive
 clearing browsing data, a factory reset, a different profile, or a second
 tablet.
 
+**Unfinished work is kept too.** The painting on the canvas, the cartoon
+frames and the sticker scene are snapshotted to storage about a second after
+each change - and immediately when you switch screens or the tab goes into the
+background. Reopen Playbox and they come back where you left them, no Save
+needed. Save is still what puts a finished piece into My Stuff.
+
 Playbox asks the browser for **persistent storage** at start-up so the work is
 not evicted when space runs low, and My Stuff shows how much room is left and
 whether that request was granted. Use **💾 Back up** there now and then — it
