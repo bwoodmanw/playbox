@@ -214,13 +214,17 @@ home screen like an app.
 
 ## Using it with no wifi
 
-Playbox installs a service worker (`sw.js`) the first time it opens. After
-that it loads from the tablet rather than the network, so it works on a plane,
-in a car, or anywhere the wifi has given up.
+Playbox installs a service worker (`sw.js`) the first time it opens, and from
+then on loads from the tablet rather than the network.
 
 **Nobody has to do anything.** About four seconds after the app opens, it
 quietly downloads all 181 trace pictures in the background - roughly 2 MB, or
-2.5 MB once the app itself is counted. From then on everything works offline.
+2.6 MB once the app itself is counted.
+
+**Read the Amazon Kids section below before promising a child this works on a
+plane.** The caching works there, but the Kids browser refuses to open any
+page with no connection, so a hard offline still fails. Everywhere else -
+adult-profile Silk, a home-screen shortcut, a desktop browser - it works.
 
 Menu → **📶 Use without wifi** shows what has been saved and how much room it
 is taking. There is a button there to fetch the pictures immediately rather
@@ -235,8 +239,9 @@ Use this, with the final `/`:
 Without it, GitHub Pages answers `https://bwoodmanw.github.io/playbox` with a
 301 redirect to the slashed version. That redirect needs the network, and the
 unslashed address also sits *outside* the saved copy's scope, so the browser
-never even asks Playbox - it just reports no connection. This is the single
-most likely reason offline appears not to work.
+never even asks Playbox - it just reports no connection. This was ruled out on
+Brent's tablet, which is correctly slashed, but it is worth checking first
+anywhere else because the symptom is identical.
 
 Check the allowed-sites entry at <https://parents.amazon.com> and any bookmark
 or home-screen shortcut on the tablet.
@@ -248,25 +253,25 @@ or a cross against each thing offline needs, plus the exact address the tablet
 is on, and names the one action that follows. Photograph it if you want help
 reading it.
 
-### Will this work under Amazon Kids?
+### Amazon Kids: tested, and the answer is half good
 
-Silk is Chromium underneath and supports service workers, so it should. What
-has **not** been tested on a real device is whether the Kids profile lets a
-page register one, and whether the Kids browser will open an allowlisted site
-at all with no connection - it may refuse before Playbox gets a say.
+Tested on the Fire tablet, 23 Aug 2026.
 
-To find out, on the tablet:
+**Service workers do work in the Kids browser.** The offline check came back
+green on every line: installed, activated, controlling the page, all 181
+pictures cached, 2.6 MB stored, address correctly slashed.
 
-1. Open Playbox in the child's profile and wait about ten seconds.
-2. Check Menu → **📶 Use without wifi** says *Playbox itself: saved* and
-   *181 of 181*.
-3. Turn on aeroplane mode.
-4. Close Playbox completely and open it again.
+**Aeroplane mode still gives "no connection found".** So the Kids browser is
+refusing to open the page before Playbox is consulted - almost certainly its
+own connectivity check, which it plausibly needs for parental time limits and
+allowlist sync. Nothing in a web page can get round a browser that will not
+navigate to it.
 
-If it opens and the trace pictures are all there, it works. If the browser
-refuses to open the page at all, that is Amazon Kids blocking on connectivity
-and no amount of caching will get round it - in that case use **Add to Home
-screen** from the adult profile instead, where it definitely works.
+The caching is not wasted: it still makes the app start instantly and survive
+a flaky connection. It just cannot rescue a hard offline in the Kids browser.
+
+To use it genuinely offline, open it from the **adult profile** in Silk and
+use **Add to Home screen**.
 
 ### If a bad copy ever gets stuck
 
