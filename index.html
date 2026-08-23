@@ -378,6 +378,7 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:5;background:transparent;p
           <button class="act" id="envBtn">&#127794; Scene</button>
           <button class="act" id="tplBtn">&#128444;&#65039; Traces</button>
           <button class="act" id="layerBtn">&#128441;&#65039; Layers</button>
+          <button class="act" id="newPicBtn">&#128196; New</button>
         </div>
         <div class="trayfixed">
           <button class="act" id="undoBtn" aria-label="Undo">&#8630;</button>
@@ -971,7 +972,9 @@ var SHAPES = [
       g.stroke();
       g.beginPath(); ellipse(g,q.cx,q.cy-ry*0.08,rx*0.5,ry*0.9); g.stroke();
       g.beginPath(); g.arc(q.cx,q.cy-ry*0.08,Math.max(1,rx*0.2),0,Math.PI*2); g.fill();
-      g.save(); g.fillStyle='#ffffff';
+      /* the highlight was painted white, which is only right on white paper -
+         over a scene it was a white dot. Punch it out instead. */
+      g.save(); g.globalCompositeOperation='destination-out';
       g.beginPath(); g.arc(q.cx-rx*0.18,q.cy-ry*0.42,Math.max(1,rx*0.13),0,Math.PI*2); g.fill();
       g.restore();
       var lw=g.lineWidth; g.lineWidth=lw*1.8;
@@ -1042,6 +1045,27 @@ var SHAPES = [
       g.moveTo(x+w*0.56, y+h*0.80);
       g.quadraticCurveTo(x+w*0.70, y+h*0.82, x+w*0.74, y+h*0.70);
       g.stroke(); }},
+  { id:'earR', detail:true, name:'Right ear', emoji:'👂', cat:'face', draw:function(g,q){
+      /* the same ear, mirrored, so a face can have two */
+      g.save(); g.translate(q.x*2 + q.w, 0); g.scale(-1, 1);
+      var x=q.x, y=q.y, w=q.w, h=q.h;
+      /* outer rim, open towards the face on the right */
+      g.beginPath();
+      g.moveTo(x+w*0.86, y+h*0.06);
+      g.bezierCurveTo(x+w*0.16, y-h*0.04, x-w*0.06, y+h*0.44, x+w*0.20, y+h*0.76);
+      g.bezierCurveTo(x+w*0.38, y+h*0.98, x+w*0.66, y+h*1.04, x+w*0.80, y+h*0.86);
+      g.stroke();
+      /* inner fold */
+      g.beginPath();
+      g.moveTo(x+w*0.74, y+h*0.26);
+      g.bezierCurveTo(x+w*0.34, y+h*0.24, x+w*0.26, y+h*0.60, x+w*0.50, y+h*0.74);
+      g.stroke();
+      /* lobe crease */
+      g.beginPath();
+      g.moveTo(x+w*0.56, y+h*0.80);
+      g.quadraticCurveTo(x+w*0.70, y+h*0.82, x+w*0.74, y+h*0.70);
+      g.stroke();   g.restore(); }},
+
   /* ---- fun ---- */
   { id:'cloud', detail:true, name:'Cloud', emoji:'☁️', cat:'fun', draw:function(g,q){
       /* one silhouette, not four stroked circles - those showed their
@@ -1191,6 +1215,20 @@ function onDown(e){
   }
   var p = localPos(e);
 
+  if(S.tool === 'pick'){
+    try{ DC.setPointerCapture(e.pointerId); }catch(err){}
+    if(SEL && selHit(p)){
+      SEL.grab = { x: p.x - SEL.x, y: p.y - SEL.y };
+      drawing = true;
+      return;
+    }
+    if(SEL) stampSel(false);
+    pushUndo();
+    if(pickAt(p)){ drawSel(); buildShapeBar(); toast('Drag it, or use the buttons'); }
+    else { doUndo(); toast('Tap on something you have drawn'); }
+    return;
+  }
+
   if(S.tool === 'select'){
     try{ DC.setPointerCapture(e.pointerId); }catch(err){}
     if(SEL && selHit(p)){
@@ -1233,6 +1271,11 @@ function onMove(e){
     clampPan(); applyView();
     return;
   }
+  if(S.tool === 'pick'){
+    var pq = localPos(e);
+    if(SEL && SEL.grab){ SEL.x = pq.x - SEL.grab.x; SEL.y = pq.y - SEL.grab.y; drawSel(); }
+    return;
+  }
   if(S.tool === 'select'){
     var q = localPos(e);
     if(SEL && SEL.grab){ SEL.x = q.x - SEL.grab.x; SEL.y = q.y - SEL.grab.y; drawSel(); return; }
@@ -1269,6 +1312,11 @@ function onMove(e){
 function onUp(e){
   if(!drawing) return;
   if(S.panMode){ panDrag = null; drawing = false; return; }
+  if(S.tool === 'pick'){
+    drawing = false;
+    if(SEL) SEL.grab = null;
+    return;
+  }
   if(S.tool === 'select'){
     drawing = false;
     if(SEL && SEL.grab){ SEL.grab = null; return; }
@@ -1334,7 +1382,7 @@ function startTrace(apply){
     '<div class="optgrid">' +
       '<button id="tfNew"><span class="oe">\uD83D\uDCC4</span>' +
         '<span class="on2">Start fresh</span>' +
-        '<span class="od">Clear my drawing</span></button>' +
+        '<span class="od">Clear my drawing, keep the scene</span></button>' +
       '<button id="tfKeep"><span class="oe">\u270F\uFE0F</span>' +
         '<span class="on2">Keep my drawing</span>' +
         '<span class="od">Trace goes with it</span></button>' +
@@ -1347,6 +1395,25 @@ function startTrace(apply){
   };
   $('tfKeep').onclick = function(){ closeModal(); apply(); };
   $('tfNo').onclick = closeModal;
+}
+/* A truly blank page: drawing, trace and scene all cleared. 'Start fresh'
+   when picking a trace only clears the drawing, because the scene is usually
+   a deliberate choice - but there was no way to get back to nothing. */
+function newPicture(){
+  grownUpGate('Clear the drawing, the trace and the scene?', function(){
+    pushUndo();
+    clearBoard();
+    clearTrace();
+    S.paintEnv = 'none'; S.animEnv = 'none';
+    S.traceFront = false; S.traceHidden = false; S.sceneHidden = false;
+    store.set('paintEnv','none'); store.set('animEnv','none');
+    renderEnv($('paintBg'), 'none');
+    renderEnv($('animBg'), 'none');
+    applyLayerView();
+    resetView();
+    afterEdit();
+    toast('Blank page');
+  });
 }
 /* ---------- layers ---------- */
 function traceCtx(){ return TX || DX; }
@@ -1475,21 +1542,22 @@ wireGestures('animWrap');
    TOOL / COLOUR / SIZE UI
    ============================================================ */
 var TOOLS = [
-  { id:'select',  icon:'⬚',             label:'Select',  little:true  },
-  { id:'stamp',   icon:'🙂',       label:'Stamp',   little:true  },
-  { id:'brush',   icon:'🖌️', label:'Brush',   little:true  },
-  { id:'crayon',  icon:'🖍️', label:'Crayon',  little:true  },
-  { id:'rainbow', icon:'🌈',       label:'Rainbow', little:true  },
-  { id:'glitter', icon:'✨',             label:'Sparkle', little:true  },
-  { id:'shapes',  icon:'⬟',             label:'Shapes',  little:true  },
-  { id:'fill',    icon:'🪣',       label:'Fill',    little:true  },
-  { id:'eraser',  icon:'🧽',       label:'Eraser',  little:true  },
-  { id:'chalk',   icon:'🪨',       label:'Chalk',   little:false },
-  { id:'marker',  icon:'🖊️', label:'Marker',  little:false },
-  { id:'pencil',  icon:'✏️',       label:'Pencil',  little:false },
-  { id:'water',   icon:'💧',       label:'Water',   little:false },
-  { id:'neon',    icon:'💡',       label:'Neon',    little:false },
-  { id:'spray',   icon:'🧴',       label:'Spray',   little:false }
+  { id:'pick',    icon:'\u2196\uFE0F', label:'Select', little:true  },
+  { id:'select',  icon:'\u2B1A',             label:'Area',   little:true  },
+  { id:'shapes',  icon:'\u2B1F',             label:'Shapes', little:true  },
+  { id:'pencil',  icon:'\u270F\uFE0F', label:'Pencil', little:true  },
+  { id:'marker',  icon:'\uD83D\uDD8A\uFE0F', label:'Marker', little:true  },
+  { id:'fill',    icon:'\uD83E\uDEA3', label:'Fill',   little:true  },
+  { id:'eraser',  icon:'\uD83E\uDDFD', label:'Eraser', little:true  },
+  { id:'brush',   icon:'\uD83D\uDD8C\uFE0F', label:'Brush',  little:true  },
+  { id:'crayon',  icon:'\uD83D\uDD8D\uFE0F', label:'Crayon', little:true  },
+  { id:'rainbow', icon:'\uD83C\uDF08', label:'Rainbow',little:true  },
+  { id:'glitter', icon:'\u2728',             label:'Sparkle',little:true  },
+  { id:'stamp',   icon:'\uD83D\uDE42', label:'Stamp',  little:true  },
+  { id:'chalk',   icon:'\uD83E\uDEA8', label:'Chalk',  little:false },
+  { id:'water',   icon:'\uD83D\uDCA7', label:'Water',  little:false },
+  { id:'neon',    icon:'\uD83D\uDCA1', label:'Neon',   little:false },
+  { id:'spray',   icon:'\uD83E\uDDF4', label:'Spray',  little:false }
 ];
 function activeTools(){
   return TOOLS.filter(function(t){ return isLittle() ? t.little : true; });
@@ -1532,7 +1600,7 @@ function subBtn(bar, label, fn, sel){
 function buildShapeBar(){
   var bar = $('shapeBar');
   var t = S.tool;
-  if(S.screen !== 'paint' || (t !== 'shapes' && t !== 'stamp' && t !== 'select')){
+  if(S.screen !== 'paint' || (t !== 'shapes' && t !== 'stamp' && t !== 'select' && t !== 'pick')){
     bar.classList.add('hide'); return;
   }
   bar.classList.remove('hide');
@@ -1548,6 +1616,8 @@ function buildShapeBar(){
       subBtn(bar, '<span style="font-size:16px">' + c.emoji + '</span> ' + c.name,
              function(){
                S.shapeCat = c.id;
+               /* a filled eye is a blob of colour; face parts want outlines */
+               S.shapeFill = (c.id !== 'face');
                var first = SHAPES.filter(function(x){ return x.cat === c.id; })[0];
                if(first) S.shape = first.id;
                buildShapeBar();
@@ -1573,12 +1643,14 @@ function buildShapeBar(){
     return;
   }
 
-  /* select */
-  lbl.textContent = SEL ? 'Selection' : 'Select';
+  /* select and pick share the transform controls */
+  lbl.textContent = SEL ? 'Selection' : (t === 'pick' ? 'Tap a thing' : 'Select');
   if(!SEL){
     var hint = document.createElement('span');
     hint.style.cssText = 'font-weight:700;color:#5b5175;font-size:14px;white-space:nowrap';
-    hint.textContent = 'Drag a box around what you want to move';
+    hint.textContent = (t === 'pick')
+      ? 'Tap something you drew to pick it up'
+      : 'Drag a box around what you want to move';
     bar.appendChild(hint);
     return;
   }
@@ -1600,6 +1672,81 @@ function buildShapeBar(){
   }, true);
 }
 
+/* ---------- arrow select: lift whatever you tapped ---------- */
+
+/* True object selection needs an object model, and this is a raster canvas.
+   The next best thing, and what a child actually means by 'that bit there',
+   is the connected run of ink under the finger. Worked out on a quarter-size
+   mask so the flood stays quick on a big canvas. */
+function pickAt(p){
+  if(!DC || !DC.width) return false;
+  var W = DC.width, H = DC.height;
+  var img;
+  try{ img = DX.getImageData(0, 0, W, H); }catch(e){ return false; }
+  var data = img.data;
+
+  var STEP = Math.max(1, Math.round(Math.max(W, H) / 420));
+  var mw = Math.ceil(W / STEP), mh = Math.ceil(H / STEP);
+  var mask = new Uint8Array(mw * mh);
+  for(var my = 0; my < mh; my++){
+    for(var mx = 0; mx < mw; mx++){
+      var sx = mx * STEP, sy = my * STEP;
+      if(data[(sy * W + sx) * 4 + 3] > 12) mask[my * mw + mx] = 1;
+    }
+  }
+
+  var tx = Math.round(p.x * DPR / STEP), ty = Math.round(p.y * DPR / STEP);
+  if(tx < 0 || ty < 0 || tx >= mw || ty >= mh) return false;
+
+  /* a finger rarely lands exactly on a line, so look nearby for ink */
+  if(!mask[ty * mw + tx]){
+    var best = -1, bd = 1e9;
+    var R = 14;
+    for(var yy = Math.max(0, ty - R); yy < Math.min(mh, ty + R); yy++){
+      for(var xx = Math.max(0, tx - R); xx < Math.min(mw, tx + R); xx++){
+        if(!mask[yy * mw + xx]) continue;
+        var d2 = (xx - tx) * (xx - tx) + (yy - ty) * (yy - ty);
+        if(d2 < bd){ bd = d2; best = yy * mw + xx; }
+      }
+    }
+    if(best < 0) return false;
+    tx = best % mw; ty = (best / mw) | 0;
+  }
+
+  /* flood the connected region, remembering only its bounds */
+  var seen = new Uint8Array(mw * mh);
+  var stack = [ty * mw + tx];
+  seen[ty * mw + tx] = 1;
+  var x0 = tx, x1 = tx, y0 = ty, y1 = ty, count = 0;
+  while(stack.length){
+    var i = stack.pop();
+    count++;
+    var cx = i % mw, cy = (i / mw) | 0;
+    if(cx < x0) x0 = cx;
+    if(cx > x1) x1 = cx;
+    if(cy < y0) y0 = cy;
+    if(cy > y1) y1 = cy;
+    var nb = [i - 1, i + 1, i - mw, i + mw];
+    for(var k = 0; k < 4; k++){
+      var j = nb[k];
+      if(j < 0 || j >= mask.length || seen[j] || !mask[j]) continue;
+      if(k === 0 && cx === 0) continue;
+      if(k === 1 && cx === mw - 1) continue;
+      seen[j] = 1;
+      stack.push(j);
+    }
+  }
+  if(count < 3) return false;
+
+  var pad = 2;
+  var rect = {
+    x0: Math.max(0, (x0 - pad) * STEP) / DPR,
+    y0: Math.max(0, (y0 - pad) * STEP) / DPR,
+    x1: Math.min(W, (x1 + 1 + pad) * STEP) / DPR,
+    y1: Math.min(H, (y1 + 1 + pad) * STEP) / DPR
+  };
+  return liftSelection(rect);
+}
 /* ---------- floating selection ---------- */
 var SEL = null;         /* {c, x, y, w, h, rot, scale, flip} in CSS pixels */
 var marquee = null;
@@ -3266,6 +3413,7 @@ $('zoomIn').addEventListener('click', function(){ setZoom(S.zoom * 1.4); });
 $('zoomOut').addEventListener('click', function(){ setZoom(S.zoom / 1.4); });
 $('zoomFit').addEventListener('click', resetView);
 $('layerBtn').addEventListener('click', openLayers);
+$('newPicBtn').addEventListener('click', newPicture);
 $('panBtn').addEventListener('click', function(){
   S.panMode = !S.panMode;
   if(S.panMode && S.zoom <= 1){
@@ -5293,6 +5441,7 @@ var MENU = [
   { id:'anim',    emoji:'\uD83C\uDFAC', name:'Animate' },
   { id:'scene',   emoji:'\uD83E\uDD84', name:'Stickers' },
   { id:'music',   emoji:'\uD83C\uDFB5', name:'Music' },
+  { act:'newpic', emoji:'📄', name:'New picture' },
   { group:'Your things' },
   { id:'gallery', emoji:'\uD83D\uDDC2\uFE0F', name:'My Stuff' },
   { act:'backup', emoji:'\uD83D\uDCBE', name:'Back up' },
@@ -5320,6 +5469,7 @@ function openDrawer(){
       closeDrawer();
       if(m.id === 'trace'){ go('paint'); setTimeout(openTemplates, 200); return; }
       if(m.id){ go(m.id); return; }
+      if(m.act === 'newpic'){ go('paint'); setTimeout(newPicture, 200); return; }
       if(m.act === 'backup'){ exportBackup(); return; }
       if(m.act === 'restore'){ $('bakIn').click(); return; }
       if(m.act === 'full'){ toggleFullscreen(); return; }
