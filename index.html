@@ -510,7 +510,7 @@ var S = {
   color: '#ff4d8d',
   size: 16,
   tool: 'brush',
-  shape: 'rect',
+  shape: 'rect', shapeCat: 'line',
   shapeFill: true,
   customColors: store.get('customColors', []),
   stickers: [], selectedSticker: null, sceneBg: '#bfe8ff',
@@ -837,15 +837,273 @@ function strokeSeg(a, b){
 }
 
 /* ---------- shapes ---------- */
-var SHAPES = [
-  { id:'line',  name:'Line',     emoji:'╱' },
-  { id:'rect',  name:'Box',      emoji:'■' },
-  { id:'oval',  name:'Circle',   emoji:'●' },
-  { id:'tri',   name:'Triangle', emoji:'▲' },
-  { id:'star',  name:'Star',     emoji:'★' },
-  { id:'heart', name:'Heart',    emoji:'♥' },
-  { id:'arrow', name:'Arrow',    emoji:'➤' }
+var SHAPE_CATS = [
+  { id:'line',  name:'Lines',  emoji:'\u3030\uFE0F' },
+  { id:'shape', name:'Shapes', emoji:'\u2B1F' },
+  { id:'face',  name:'Faces',  emoji:'\uD83D\uDE42' },
+  { id:'fun',   name:'Fun',    emoji:'\u2728' }
 ];
+
+/* Each shape gets the drag rectangle already worked out:
+     x,y,w,h  the box, cx,cy its centre, a/b the raw drag points,
+     fill     whether the child chose Filled, lw the stroke width.
+   Shapes that can sensibly be filled end with done(g,q); the rest stroke. */
+function done(g, q){ if(q.fill) g.fill(); else g.stroke(); }
+
+function petal(g, cx, cy, rx, ry, rot){
+  g.save(); g.translate(cx, cy); g.rotate(rot);
+  g.beginPath(); ellipse(g, 0, 0, rx, ry); g.restore();
+}
+
+var SHAPES = [
+  /* ---- lines ---- */
+  { id:'line', name:'Line', emoji:'\u2571', cat:'line', draw:function(g,q){
+      g.beginPath(); g.moveTo(q.a.x,q.a.y); g.lineTo(q.b.x,q.b.y); g.stroke(); }},
+  { id:'curve', name:'Curve', emoji:'\u2312', cat:'line', draw:function(g,q){
+      /* bow the line out perpendicular to the drag */
+      var mx=(q.a.x+q.b.x)/2, my=(q.a.y+q.b.y)/2;
+      var dx=q.b.x-q.a.x, dy=q.b.y-q.a.y;
+      g.beginPath(); g.moveTo(q.a.x,q.a.y);
+      g.quadraticCurveTo(mx - dy*0.45, my + dx*0.45, q.b.x, q.b.y); g.stroke(); }},
+  { id:'scurve', name:'S curve', emoji:'\u223F', cat:'line', draw:function(g,q){
+      var dx=q.b.x-q.a.x, dy=q.b.y-q.a.y;
+      g.beginPath(); g.moveTo(q.a.x,q.a.y);
+      g.bezierCurveTo(q.a.x + dx*0.1 - dy*0.4, q.a.y + dy*0.1 + dx*0.4,
+                      q.b.x - dx*0.1 + dy*0.4, q.b.y - dy*0.1 - dx*0.4,
+                      q.b.x, q.b.y); g.stroke(); }},
+  { id:'wave', name:'Wave', emoji:'\u3030\uFE0F', cat:'line', draw:function(g,q){
+      var dx=q.b.x-q.a.x, dy=q.b.y-q.a.y;
+      var len=Math.sqrt(dx*dx+dy*dy)||1;
+      var nx=-dy/len, ny=dx/len, amp=Math.max(6,Math.min(60,len*0.14));
+      g.beginPath();
+      for(var i=0;i<=40;i++){
+        var t=i/40, s2=Math.sin(t*Math.PI*4)*amp;
+        var px=q.a.x+dx*t+nx*s2, py=q.a.y+dy*t+ny*s2;
+        if(i===0) g.moveTo(px,py); else g.lineTo(px,py);
+      }
+      g.stroke(); }},
+  { id:'zigzag', name:'Zigzag', emoji:'\u26A1', cat:'line', draw:function(g,q){
+      var dx=q.b.x-q.a.x, dy=q.b.y-q.a.y;
+      var len=Math.sqrt(dx*dx+dy*dy)||1;
+      var nx=-dy/len, ny=dx/len, amp=Math.max(6,Math.min(60,len*0.16));
+      g.beginPath();
+      for(var i=0;i<=8;i++){
+        var t=i/8, s2=(i%2?1:-1)*amp;
+        if(i===0||i===8) s2=0;
+        var px=q.a.x+dx*t+nx*s2, py=q.a.y+dy*t+ny*s2;
+        if(i===0) g.moveTo(px,py); else g.lineTo(px,py);
+      }
+      g.stroke(); }},
+  { id:'spiral', name:'Spiral', emoji:'\uD83C\uDF00', cat:'line', draw:function(g,q){
+      var r=Math.max(4,Math.min(q.w,q.h)/2);
+      g.beginPath();
+      for(var i=0;i<=180;i++){
+        var t=i/180, ang=t*Math.PI*5, rr=r*t;
+        var px=q.cx+Math.cos(ang)*rr, py=q.cy+Math.sin(ang)*rr;
+        if(i===0) g.moveTo(px,py); else g.lineTo(px,py);
+      }
+      g.stroke(); }},
+  { id:'arrow', name:'Arrow', emoji:'\u27A4', cat:'line', draw:function(g,q){
+      var ang=Math.atan2(q.b.y-q.a.y,q.b.x-q.a.x), head=Math.max(10,q.lw*3);
+      g.beginPath();
+      g.moveTo(q.a.x,q.a.y); g.lineTo(q.b.x,q.b.y);
+      g.moveTo(q.b.x,q.b.y); g.lineTo(q.b.x-head*Math.cos(ang-0.42), q.b.y-head*Math.sin(ang-0.42));
+      g.moveTo(q.b.x,q.b.y); g.lineTo(q.b.x-head*Math.cos(ang+0.42), q.b.y-head*Math.sin(ang+0.42));
+      g.stroke(); }},
+
+  /* ---- shapes ---- */
+  { id:'rect', name:'Box', emoji:'\u25A0', cat:'shape', draw:function(g,q){
+      g.beginPath(); g.rect(q.x,q.y,q.w,q.h); done(g,q); }},
+  { id:'oval', name:'Circle', emoji:'\u25CF', cat:'shape', draw:function(g,q){
+      g.beginPath(); ellipse(g,q.cx,q.cy,Math.max(1,q.w/2),Math.max(1,q.h/2)); done(g,q); }},
+  { id:'tri', name:'Triangle', emoji:'\u25B2', cat:'shape', draw:function(g,q){
+      g.beginPath(); g.moveTo(q.cx,q.y); g.lineTo(q.x+q.w,q.y+q.h); g.lineTo(q.x,q.y+q.h);
+      g.closePath(); done(g,q); }},
+  { id:'diamond', name:'Diamond', emoji:'\u25C6', cat:'shape', draw:function(g,q){
+      g.beginPath(); g.moveTo(q.cx,q.y); g.lineTo(q.x+q.w,q.cy);
+      g.lineTo(q.cx,q.y+q.h); g.lineTo(q.x,q.cy); g.closePath(); done(g,q); }},
+  { id:'hex', name:'Hexagon', emoji:'\u2B22', cat:'shape', draw:function(g,q){
+      g.beginPath();
+      for(var i=0;i<6;i++){
+        var ang=Math.PI/3*i - Math.PI/2;
+        var px=q.cx+Math.cos(ang)*q.w/2, py=q.cy+Math.sin(ang)*q.h/2;
+        if(i===0) g.moveTo(px,py); else g.lineTo(px,py);
+      }
+      g.closePath(); done(g,q); }},
+  { id:'star', name:'Star', emoji:'\u2605', cat:'shape', draw:function(g,q){
+      var r=Math.max(4,Math.min(q.w,q.h)/2);
+      g.beginPath();
+      for(var i=0;i<10;i++){
+        var rr=(i%2===0)?r:r*0.44, aa=(Math.PI/5)*i - Math.PI/2;
+        var px=q.cx+Math.cos(aa)*rr, py=q.cy+Math.sin(aa)*rr;
+        if(i===0) g.moveTo(px,py); else g.lineTo(px,py);
+      }
+      g.closePath(); done(g,q); }},
+  { id:'heart', name:'Heart', emoji:'\u2665', cat:'shape', draw:function(g,q){
+      var sz=Math.max(4,Math.min(q.w,q.h)), top=q.cy - sz*0.28;
+      g.beginPath(); g.moveTo(q.cx, q.cy + sz*0.42);
+      g.bezierCurveTo(q.cx-sz*0.75, q.cy-sz*0.1, q.cx-sz*0.42, top-sz*0.34, q.cx, top);
+      g.bezierCurveTo(q.cx+sz*0.42, top-sz*0.34, q.cx+sz*0.75, q.cy-sz*0.1, q.cx, q.cy+sz*0.42);
+      g.closePath(); done(g,q); }},
+  { id:'moon', name:'Moon', emoji:'\uD83C\uDF19', cat:'shape', draw:function(g,q){
+      var r=Math.max(4,Math.min(q.w,q.h)/2);
+      g.beginPath();
+      g.arc(q.cx,q.cy,r,Math.PI*0.42,Math.PI*1.58,false);
+      g.arc(q.cx+r*0.42,q.cy,r*0.92,Math.PI*1.42,Math.PI*0.58,true);
+      g.closePath(); done(g,q); }},
+
+  /* ---- faces ---- */
+  { id:'eye', name:'Eye', emoji:'\uD83D\uDC41\uFE0F', cat:'face', draw:function(g,q){
+      var rx=Math.max(4,q.w/2), ry=Math.max(3,q.h/2);
+      g.beginPath();
+      g.moveTo(q.cx-rx,q.cy);
+      g.bezierCurveTo(q.cx-rx*0.55,q.cy-ry*1.6, q.cx+rx*0.55,q.cy-ry*1.6, q.cx+rx,q.cy);
+      g.bezierCurveTo(q.cx+rx*0.55,q.cy+ry*1.3, q.cx-rx*0.55,q.cy+ry*1.3, q.cx-rx,q.cy);
+      g.stroke();
+      g.beginPath(); ellipse(g,q.cx,q.cy,rx*0.42,ry*0.85); g.stroke();
+      g.beginPath(); g.arc(q.cx,q.cy,Math.max(1,rx*0.19),0,Math.PI*2); g.fill(); }},
+  { id:'eyebig', name:'Big eye', emoji:'\uD83D\uDC40', cat:'face', draw:function(g,q){
+      var rx=Math.max(4,q.w/2), ry=Math.max(3,q.h/2);
+      g.beginPath();
+      g.moveTo(q.cx-rx,q.cy);
+      g.bezierCurveTo(q.cx-rx*0.6,q.cy-ry*1.7, q.cx+rx*0.6,q.cy-ry*1.7, q.cx+rx,q.cy);
+      g.bezierCurveTo(q.cx+rx*0.5,q.cy+ry*1.4, q.cx-rx*0.5,q.cy+ry*1.4, q.cx-rx,q.cy);
+      g.stroke();
+      g.beginPath(); ellipse(g,q.cx,q.cy-ry*0.08,rx*0.5,ry*0.9); g.stroke();
+      g.beginPath(); g.arc(q.cx,q.cy-ry*0.08,Math.max(1,rx*0.2),0,Math.PI*2); g.fill();
+      g.save(); g.fillStyle='#ffffff';
+      g.beginPath(); g.arc(q.cx-rx*0.18,q.cy-ry*0.42,Math.max(1,rx*0.13),0,Math.PI*2); g.fill();
+      g.restore();
+      var lw=g.lineWidth; g.lineWidth=lw*1.8;
+      g.beginPath(); g.moveTo(q.cx-rx,q.cy);
+      g.bezierCurveTo(q.cx-rx*0.6,q.cy-ry*1.7, q.cx+rx*0.6,q.cy-ry*1.7, q.cx+rx,q.cy);
+      g.stroke(); g.lineWidth=lw; }},
+  { id:'eyeshut', name:'Closed eye', emoji:'\uD83D\uDE0C', cat:'face', draw:function(g,q){
+      var rx=Math.max(4,q.w/2), ry=Math.max(3,q.h/2);
+      g.beginPath(); g.moveTo(q.cx-rx,q.cy-ry*0.3);
+      g.quadraticCurveTo(q.cx,q.cy+ry*1.1,q.cx+rx,q.cy-ry*0.3); g.stroke();
+      g.beginPath();
+      g.moveTo(q.cx-rx*0.6,q.cy+ry*0.5); g.lineTo(q.cx-rx*0.75,q.cy+ry*1.1);
+      g.moveTo(q.cx,q.cy+ry*0.72); g.lineTo(q.cx,q.cy+ry*1.35);
+      g.moveTo(q.cx+rx*0.6,q.cy+ry*0.5); g.lineTo(q.cx+rx*0.75,q.cy+ry*1.1);
+      g.stroke(); }},
+  { id:'brow', name:'Eyebrow', emoji:'\u3030\uFE0F', cat:'face', draw:function(g,q){
+      var lw=g.lineWidth; g.lineWidth=lw*1.6;
+      g.beginPath(); g.moveTo(q.x,q.y+q.h);
+      g.quadraticCurveTo(q.cx,q.y-q.h*0.3,q.x+q.w,q.y+q.h*0.55); g.stroke();
+      g.lineWidth=lw; }},
+  { id:'nose', name:'Nose', emoji:'\uD83D\uDC43', cat:'face', draw:function(g,q){
+      g.beginPath();
+      g.moveTo(q.cx-q.w*0.12,q.y);
+      g.quadraticCurveTo(q.cx-q.w*0.28,q.y+q.h*0.75,q.cx,q.y+q.h*0.8);
+      g.quadraticCurveTo(q.cx+q.w*0.2,q.y+q.h*0.82,q.cx+q.w*0.22,q.y+q.h*0.55);
+      g.stroke(); }},
+  { id:'nosebutton', name:'Button nose', emoji:'\u25E1', cat:'face', draw:function(g,q){
+      g.beginPath();
+      g.moveTo(q.x,q.y+q.h*0.2);
+      g.quadraticCurveTo(q.cx,q.y+q.h*1.15,q.x+q.w,q.y+q.h*0.2); g.stroke();
+      g.beginPath();
+      g.arc(q.cx-q.w*0.3,q.y+q.h*0.62,Math.max(1,q.w*0.07),0,Math.PI*2);
+      g.arc(q.cx+q.w*0.3,q.y+q.h*0.62,Math.max(1,q.w*0.07),0,Math.PI*2);
+      g.fill(); }},
+  { id:'smile', name:'Smile', emoji:'\uD83D\uDE42', cat:'face', draw:function(g,q){
+      g.beginPath(); g.moveTo(q.x,q.y);
+      g.quadraticCurveTo(q.cx,q.y+q.h*1.6,q.x+q.w,q.y); g.stroke(); }},
+  { id:'frown', name:'Frown', emoji:'\u2639\uFE0F', cat:'face', draw:function(g,q){
+      g.beginPath(); g.moveTo(q.x,q.y+q.h);
+      g.quadraticCurveTo(q.cx,q.y-q.h*0.6,q.x+q.w,q.y+q.h); g.stroke(); }},
+  { id:'grin', name:'Grin', emoji:'\uD83D\uDE01', cat:'face', draw:function(g,q){
+      g.beginPath(); g.moveTo(q.x,q.y);
+      g.quadraticCurveTo(q.cx,q.y+q.h*1.7,q.x+q.w,q.y);
+      g.closePath(); g.stroke();
+      g.beginPath(); g.moveTo(q.x+q.w*0.08,q.y+q.h*0.28); g.lineTo(q.x+q.w*0.92,q.y+q.h*0.28);
+      g.stroke();
+      for(var i=1;i<4;i++){
+        var px=q.x+q.w*(i/4);
+        g.beginPath(); g.moveTo(px,q.y); g.lineTo(px,q.y+q.h*0.28); g.stroke();
+      } }},
+  { id:'mouthopen', name:'Oh!', emoji:'\uD83D\uDE2E', cat:'face', draw:function(g,q){
+      g.beginPath(); ellipse(g,q.cx,q.cy,Math.max(3,q.w/2),Math.max(3,q.h/2)); done(g,q); }},
+  { id:'ear', name:'Ear', emoji:'👂', cat:'face', draw:function(g,q){
+      var x=q.x, y=q.y, w=q.w, h=q.h;
+      /* outer rim, open towards the face on the right */
+      g.beginPath();
+      g.moveTo(x+w*0.86, y+h*0.06);
+      g.bezierCurveTo(x+w*0.16, y-h*0.04, x-w*0.06, y+h*0.44, x+w*0.20, y+h*0.76);
+      g.bezierCurveTo(x+w*0.38, y+h*0.98, x+w*0.66, y+h*1.04, x+w*0.80, y+h*0.86);
+      g.stroke();
+      /* inner fold */
+      g.beginPath();
+      g.moveTo(x+w*0.74, y+h*0.26);
+      g.bezierCurveTo(x+w*0.34, y+h*0.24, x+w*0.26, y+h*0.60, x+w*0.50, y+h*0.74);
+      g.stroke();
+      /* lobe crease */
+      g.beginPath();
+      g.moveTo(x+w*0.56, y+h*0.80);
+      g.quadraticCurveTo(x+w*0.70, y+h*0.82, x+w*0.74, y+h*0.70);
+      g.stroke(); }},
+  /* ---- fun ---- */
+  { id:'cloud', name:'Cloud', emoji:'☁️', cat:'fun', draw:function(g,q){
+      /* one silhouette, not four stroked circles - those showed their
+         overlapping edges and read as a scribble */
+      var x=q.x, y=q.y, w=q.w, h=q.h, by=y+h*0.88;
+      g.beginPath();
+      g.moveTo(x+w*0.18, by);
+      g.bezierCurveTo(x-w*0.04, by,        x+w*0.00, y+h*0.44, x+w*0.22, y+h*0.42);
+      g.bezierCurveTo(x+w*0.22, y+h*0.02,  x+w*0.60, y-h*0.02, x+w*0.64, y+h*0.34);
+      g.bezierCurveTo(x+w*0.86, y+h*0.18,  x+w*1.04, y+h*0.52, x+w*0.84, by);
+      g.closePath(); done(g,q); }},
+  { id:'bubble', name:'Speech', emoji:'\uD83D\uDCAC', cat:'fun', draw:function(g,q){
+      var r=Math.min(q.w,q.h)*0.22;
+      var hh=Math.max(6,q.h*0.78);
+      g.beginPath();
+      if(g.roundRect) g.roundRect(q.x,q.y,q.w,hh,r);
+      else g.rect(q.x,q.y,q.w,hh);
+      g.moveTo(q.x+q.w*0.24,q.y+hh);
+      g.lineTo(q.x+q.w*0.18,q.y+q.h);
+      g.lineTo(q.x+q.w*0.44,q.y+hh);
+      done(g,q); }},
+  { id:'bolt', name:'Bolt', emoji:'\u26A1', cat:'fun', draw:function(g,q){
+      g.beginPath();
+      g.moveTo(q.cx+q.w*0.12,q.y);
+      g.lineTo(q.x+q.w*0.2,q.cy+q.h*0.05);
+      g.lineTo(q.cx-q.w*0.02,q.cy+q.h*0.05);
+      g.lineTo(q.x+q.w*0.3,q.y+q.h);
+      g.lineTo(q.x+q.w*0.8,q.cy-q.h*0.08);
+      g.lineTo(q.cx+q.w*0.02,q.cy-q.h*0.08);
+      g.closePath(); done(g,q); }},
+  { id:'flower', name:'Flower', emoji:'\uD83C\uDF3C', cat:'fun', draw:function(g,q){
+      var r=Math.max(4,Math.min(q.w,q.h)/2);
+      for(var i=0;i<6;i++){
+        var ang=(Math.PI/3)*i;
+        petal(g, q.cx+Math.cos(ang)*r*0.55, q.cy+Math.sin(ang)*r*0.55,
+              r*0.42, r*0.26, ang);
+        done(g,q);
+      }
+      g.beginPath(); g.arc(q.cx,q.cy,r*0.26,0,Math.PI*2); g.stroke(); }},
+  { id:'leaf', name:'Leaf', emoji:'\uD83C\uDF43', cat:'fun', draw:function(g,q){
+      g.beginPath();
+      g.moveTo(q.x,q.y+q.h);
+      g.quadraticCurveTo(q.x,q.y, q.x+q.w,q.y);
+      g.quadraticCurveTo(q.x+q.w,q.y+q.h, q.x,q.y+q.h);
+      done(g,q);
+      g.beginPath(); g.moveTo(q.x,q.y+q.h); g.lineTo(q.x+q.w,q.y); g.stroke(); }},
+  { id:'sun', name:'Sun', emoji:'\u2600\uFE0F', cat:'fun', draw:function(g,q){
+      var r=Math.max(4,Math.min(q.w,q.h)/2);
+      g.beginPath(); g.arc(q.cx,q.cy,r*0.52,0,Math.PI*2); done(g,q);
+      g.beginPath();
+      for(var i=0;i<8;i++){
+        var ang=(Math.PI/4)*i;
+        g.moveTo(q.cx+Math.cos(ang)*r*0.66, q.cy+Math.sin(ang)*r*0.66);
+        g.lineTo(q.cx+Math.cos(ang)*r*1.02, q.cy+Math.sin(ang)*r*1.02);
+      }
+      g.stroke(); }}
+];
+
+function shapeById(id){
+  for(var i=0;i<SHAPES.length;i++) if(SHAPES[i].id===id) return SHAPES[i];
+  return SHAPES[0];
+}
 
 function ellipse(g, cx, cy, rx, ry){
   if(g.ellipse){ g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2); return; }
@@ -854,51 +1112,17 @@ function ellipse(g, cx, cy, rx, ry){
 }
 
 function drawShape(g, a, b, kind, fill, color, lw){
-  g.save();
-  g.strokeStyle = color; g.fillStyle = color;
-  g.lineWidth = Math.max(2, lw); g.lineCap = 'round'; g.lineJoin = 'round';
   var x = Math.min(a.x,b.x), y = Math.min(a.y,b.y);
   var w = Math.abs(b.x-a.x), h = Math.abs(b.y-a.y);
-  var cx = x + w/2, cy = y + h/2;
-
-  if(kind === 'line'){
-    g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); g.restore(); return;
-  }
-  if(kind === 'arrow'){
-    var ang = Math.atan2(b.y-a.y, b.x-a.x), head = Math.max(10, lw*3);
-    g.beginPath();
-    g.moveTo(a.x,a.y); g.lineTo(b.x,b.y);
-    g.moveTo(b.x,b.y); g.lineTo(b.x - head*Math.cos(ang-0.42), b.y - head*Math.sin(ang-0.42));
-    g.moveTo(b.x,b.y); g.lineTo(b.x - head*Math.cos(ang+0.42), b.y - head*Math.sin(ang+0.42));
-    g.stroke(); g.restore(); return;
-  }
-
-  g.beginPath();
-  if(kind === 'rect'){ g.rect(x,y,w,h); }
-  else if(kind === 'oval'){ ellipse(g, cx, cy, Math.max(1,w/2), Math.max(1,h/2)); }
-  else if(kind === 'tri'){ g.moveTo(cx, y); g.lineTo(x+w, y+h); g.lineTo(x, y+h); g.closePath(); }
-  else if(kind === 'star'){
-    var r = Math.max(4, Math.min(w,h)/2);
-    for(var i = 0; i < 10; i++){
-      var rr = (i%2===0) ? r : r*0.44;
-      var aa = (Math.PI/5)*i - Math.PI/2;
-      var xx = cx + Math.cos(aa)*rr, yy = cy + Math.sin(aa)*rr;
-      if(i===0) g.moveTo(xx,yy); else g.lineTo(xx,yy);
-    }
-    g.closePath();
-  }
-  else if(kind === 'heart'){
-    var s = Math.max(4, Math.min(w,h));
-    var top = cy - s*0.28;
-    g.moveTo(cx, cy + s*0.42);
-    g.bezierCurveTo(cx - s*0.75, cy - s*0.1, cx - s*0.42, top - s*0.34, cx, top);
-    g.bezierCurveTo(cx + s*0.42, top - s*0.34, cx + s*0.75, cy - s*0.1, cx, cy + s*0.42);
-    g.closePath();
-  }
-  if(fill) g.fill(); else g.stroke();
+  var q = { x:x, y:y, w:w, h:h, cx:x+w/2, cy:y+h/2,
+            a:a, b:b, fill:fill, lw:Math.max(2,lw) };
+  g.save();
+  g.strokeStyle = color; g.fillStyle = color;
+  g.lineWidth = q.lw; g.lineCap = 'round'; g.lineJoin = 'round';
+  var def = shapeById(kind);
+  try{ def.draw(g, q); }catch(e){}
   g.restore();
 }
-
 /* ---------- flood fill ---------- */
 function floodFill(sx, sy, hex){
   var W = DC.width, H = DC.height;
@@ -1312,7 +1536,18 @@ function buildShapeBar(){
 
   if(t === 'shapes'){
     lbl.textContent = 'Shape';
-    SHAPES.forEach(function(sh){
+    if(!S.shapeCat) S.shapeCat = shapeById(S.shape).cat || 'line';
+    SHAPE_CATS.forEach(function(c){
+      subBtn(bar, '<span style="font-size:16px">' + c.emoji + '</span> ' + c.name,
+             function(){
+               S.shapeCat = c.id;
+               var first = SHAPES.filter(function(x){ return x.cat === c.id; })[0];
+               if(first) S.shape = first.id;
+               buildShapeBar();
+             }, S.shapeCat === c.id);
+    });
+    var sepA = document.createElement('div'); sepA.className = 'sep'; bar.appendChild(sepA);
+    SHAPES.filter(function(sh){ return sh.cat === S.shapeCat; }).forEach(function(sh){
       subBtn(bar, '<span style="font-size:18px">' + sh.emoji + '</span> ' + sh.name,
              function(){ S.shape = sh.id; buildShapeBar(); }, S.shape === sh.id);
     });
@@ -5185,7 +5420,7 @@ go('home');
 
 /* exposed only so the page can be smoke-tested from the console */
 window.__playbox = { S:S, SOUNDS:SOUNDS, TEMPLATES:TEMPLATES, TOOLS:TOOLS, SHAPES:SHAPES,
-                     PRESETS:PRESETS, TPL_CATS:TPL_CATS, GAL_KINDS:GAL_KINDS, ENVIRONMENTS:ENVIRONMENTS,
+                     PRESETS:PRESETS, TPL_CATS:TPL_CATS, SHAPE_CATS:SHAPE_CATS, drawShape:drawShape, GAL_KINDS:GAL_KINDS, ENVIRONMENTS:ENVIRONMENTS,
                      ENV_CATS:ENV_CATS, renderTemplate:renderTemplate, renderEnv:renderEnv, flatten:flatten,
                      placeImport:placeImport, toOutline:toOutline, openTemplates:openTemplates,
                      openCropper:openCropper, saveMyTrace:saveMyTrace, exportBackup:exportBackup,
