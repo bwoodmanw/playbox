@@ -4633,6 +4633,76 @@ function offlineSupported(){
   return !!(navigator.serviceWorker && window.caches && window.isSecureContext !== false);
 }
 
+/* A readout meant to be photographed. Every line is a yes/no a grown-up can
+   read out loud, because the tablet has no developer tools and the four
+   reasons offline can fail need opposite fixes. */
+function offlineReport(cb){
+  var r = {
+    url: location.href,
+    trailingSlash: /\/$/.test(location.pathname),
+    secure: window.isSecureContext !== false,
+    swApi: ('serviceWorker' in navigator),
+    cacheApi: !!window.caches,
+    controlled: !!(navigator.serviceWorker && navigator.serviceWorker.controller),
+    scope: null, active: null, regs: 0, art: 0, shell: 0, usage: null
+  };
+  if(!r.swApi){ cb(r); return; }
+
+  var done = 0;
+  function step(){ if(++done >= 3) cb(r); }
+
+  try{
+    navigator.serviceWorker.getRegistrations().then(function(rs){
+      r.regs = rs.length;
+      if(rs[0]){ r.scope = rs[0].scope; r.active = rs[0].active ? rs[0].active.state : 'none'; }
+      step();
+    })['catch'](step);
+  }catch(e){ step(); }
+
+  try{
+    caches.keys().then(function(names){
+      var pending = names.length;
+      if(!pending){ step(); return; }
+      names.forEach(function(n){
+        caches.open(n).then(function(c){ return c.keys(); }).then(function(k){
+          if(n.indexOf('playbox-art') === 0) r.art = k.length;
+          if(n.indexOf('playbox-shell') === 0) r.shell = k.length;
+          if(--pending === 0) step();
+        })['catch'](function(){ if(--pending === 0) step(); });
+      });
+    })['catch'](step);
+  }catch(e){ step(); }
+
+  if(navigator.storage && navigator.storage.estimate){
+    navigator.storage.estimate().then(function(e){ r.usage = e && e.usage; step(); })['catch'](step);
+  } else step();
+}
+
+function tick(ok){ return ok ? '\u2705' : '\u274C'; }
+
+function offlineReportHtml(r){
+  var rows = [
+    [tick(r.swApi),      'Browser can save pages', r.swApi ? 'yes' : 'NO - this is the blocker'],
+    [tick(r.secure),     'Secure connection',      r.secure ? 'yes' : 'NO - must be https'],
+    [tick(r.regs > 0),   'Playbox is installed',   r.regs > 0 ? ('yes (' + (r.active || '?') + ')') : 'NO'],
+    /* a page stays controlled by a worker that has just been unregistered,
+       so reporting that on its own reads as a contradiction */
+    [tick(r.controlled && r.regs > 0), 'Installed copy in use',
+       (r.controlled && r.regs > 0) ? 'yes' : 'not yet - reopen once'],
+    [tick(r.shell >= 3), 'App saved',              r.shell + ' files'],
+    [tick(r.art >= 181), 'Pictures saved',         r.art + ' of 181'],
+    [tick(r.trailingSlash), 'Address ends in /',   r.trailingSlash ? 'yes' : 'NO - add a / to the end']
+  ];
+  var h = '<div style="font-size:15px;line-height:1.9">';
+  rows.forEach(function(x){
+    h += '<div><span style="display:inline-block;width:22px">' + x[0] + '</span>' +
+         '<b>' + x[1] + ':</b> ' + x[2] + '</div>';
+  });
+  h += '</div><p style="color:#5b5175;font-size:13px;word-break:break-all;margin-top:10px">' +
+       r.url + (r.scope ? '<br>scope ' + r.scope : '') +
+       (r.usage ? '<br>using ' + prettyBytes(r.usage) : '') + '</p>';
+  return h;
+}
 function openOffline(){
   var total = (getExtraCount() || 0);
 
@@ -4669,12 +4739,15 @@ function openOffline(){
         'usually needs no help. All 181 pictures come to about 2 MB.' +
         est + '</p>';
       var row = (have >= total && total)
-        ? '<button id="offDrop">Remove pictures</button>' +
+        ? '<button id="offCheck">Check</button>' +
+          '<button id="offDrop">Remove</button>' +
           '<button class="go" id="offDone">Close</button>'
-        : '<button id="offDone">Close</button>' +
+        : '<button id="offCheck">Check</button>' +
+          '<button id="offDone">Close</button>' +
           '<button class="go" id="offGet">Save them now</button>';
       paint(status + pics + note, row);
       if($('offGet')) $('offGet').onclick = saveAll;
+      if($('offCheck')) $('offCheck').onclick = showReport;
       if($('offDrop')) $('offDrop').onclick = function(){
         swAsk({ cmd:'drop-art' }, function(){ closeModal(); toast('Pictures removed'); });
       };
@@ -4687,6 +4760,39 @@ function openOffline(){
       })['catch'](draw);
     } else draw();
   });
+
+  /* Shown when offline has already failed on the device, so it must not
+     assume anything works - every value is read fresh and printed plainly. */
+  function showReport(){
+    offlineReport(function(r){
+      var advice = '';
+      if(!r.swApi) advice = 'This browser will not keep pages on the tablet. ' +
+        'Offline is not possible here \u2014 open Playbox from the grown-up ' +
+        'profile in Silk and use <b>Add to Home screen</b> instead.';
+      else if(!r.trailingSlash) advice = 'The address is missing its final slash. ' +
+        'A page opened without it sits outside the saved copy, which is enough ' +
+        'on its own to cause \u201Cno connection\u201D. Change the allowed site ' +
+        'to end in <b>/</b> and try again.';
+      else if(r.regs === 0) advice = 'Playbox did not manage to install itself. ' +
+        'Stay on wifi, leave this screen open for half a minute, then close and ' +
+        'reopen Playbox.';
+      else if(!r.controlled) advice = 'Nearly there \u2014 close Playbox ' +
+        'completely and open it once more, then check again.';
+      else if(r.art < 181) advice = 'The app is saved but not all the pictures are. ' +
+        'Tap <b>Save them now</b> while on wifi.';
+      else advice = 'Everything is saved. If aeroplane mode still says there is no ' +
+        'connection, the Kids browser is refusing to open the page before Playbox ' +
+        'gets a say \u2014 nothing in the app can get round that. Use <b>Add to ' +
+        'Home screen</b> from the grown-up profile instead.';
+
+      showModal('<h2>\uD83D\uDD0D Offline check</h2>' + offlineReportHtml(r) +
+        '<p style="line-height:1.6">' + advice + '</p>' +
+        '<div class="sheetrow"><button id="offBack">Back</button>' +
+        '<button class="go" id="offDone">Close</button></div>');
+      $('offDone').onclick = closeModal;
+      $('offBack').onclick = openOffline;
+    });
+  }
 
   function saveAll(){
     loadExtraTraces(function(list){
@@ -4902,8 +5008,19 @@ function saveArtQuietly(){
     loadExtraTraces(function(list){
       if(!list || !list.length){ artDiag.push('manifest empty'); artSaveStarted = false; return; }
       var urls = list.map(function(e){ return 'traces/' + encodeURIComponent(e.file); });
-      try{ navigator.serviceWorker.controller.postMessage({ cmd:'precache-art', urls:urls }); }
-      catch(e){}
+      /* Say so when it lands. Saving silently in the background is fine until
+         someone needs to know whether it worked, and on a tablet there is no
+         other way to find out without going looking for a menu. */
+      try{
+        var ch = new MessageChannel();
+        ch.port1.onmessage = function(ev){
+          if(ev.data && ev.data.state === 'done' && !ev.data.failed && !store.get('toldOffline', false)){
+            store.set('toldOffline', true);
+            toast('Playbox is saved \u2014 it works without wifi now');
+          }
+        };
+        navigator.serviceWorker.controller.postMessage({ cmd:'precache-art', urls:urls }, [ch.port2]);
+      }catch(e){}
     });
   }
 
