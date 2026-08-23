@@ -98,11 +98,13 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-
 .tool:active{transform:scale(.93)}
 .canvaswrap{flex:1 1 auto;position:relative;min-width:0;background:#cfd8ee;
   display:flex;align-items:center;justify-content:center;overflow:hidden}
-.canvasstack{position:relative;line-height:0}
+.canvasstack{position:relative;line-height:0;transform-origin:50% 50%;will-change:transform}
 canvas.bg{position:absolute;left:0;top:0;z-index:0;background:#fff;pointer-events:none}
-canvas.board{display:block;position:relative;z-index:1;background:transparent;touch-action:none}
-canvas.onion{position:absolute;left:0;top:0;z-index:2;background:transparent;pointer-events:none;opacity:.28}
-canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;pointer-events:none}
+canvas.trace{position:absolute;left:0;top:0;z-index:1;background:transparent;pointer-events:none}
+canvas.trace.front{z-index:3}
+canvas.board{display:block;position:relative;z-index:2;background:transparent;touch-action:none}
+canvas.onion{position:absolute;left:0;top:0;z-index:4;background:transparent;pointer-events:none;opacity:.28}
+canvas.overlay{position:absolute;left:0;top:0;z-index:5;background:transparent;pointer-events:none}
 .canvasstack{box-shadow:0 0 0 2px rgba(36,26,61,.12)}
 #sceneBg{position:absolute;left:0;top:0;width:100%;height:100%;z-index:0;pointer-events:none}
 .stk{z-index:1}
@@ -131,6 +133,28 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;p
 .act.sel{background:var(--berry);color:#fff;border-color:transparent}
 .act[disabled]{opacity:.35}
 .sep{width:2px;height:40px;background:var(--line);flex:0 0 auto;border-radius:2px}
+/* the bar is one scroller of fixed-width groups; nesting a growing scroller
+   inside it meant it shrank to fit and never actually scrolled */
+.trayscroll{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:9px;
+  overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding:2px 0;
+  scrollbar-width:thin}
+.trayscroll::-webkit-scrollbar{height:5px}
+.trayscroll::-webkit-scrollbar-thumb{background:rgba(36,26,61,.28);border-radius:3px}
+.trayscroll > *{flex:0 0 auto}
+.trayfixed{flex:0 0 auto;display:flex;align-items:center;gap:7px;padding-left:9px;
+  margin-left:2px;border-left:2px solid var(--line)}
+.zlbl{font-weight:900;font-size:13px;color:var(--ink-soft);min-width:46px;text-align:center}
+/* On a phone the pinned group ate nearly the whole bar, leaving a 62px
+   window to scroll 2400px of tools through. Give each its own row instead. */
+@media (max-width:560px){
+  .tray{flex-wrap:wrap;gap:6px}
+  .trayscroll{flex:1 0 100%;order:1}
+  .trayfixed{flex:1 0 100%;order:2;border-left:0;border-top:2px solid var(--line);
+    padding-left:0;padding-top:7px;margin-left:0;justify-content:space-between}
+  .trayfixed .act{flex:1 1 0;min-width:0}
+}
+.swatches{overflow:visible}
+.sizes{overflow:visible}
 .chip{height:46px;min-width:46px;padding:0 12px;border-radius:15px;background:#fff;border:3px solid var(--line);
   display:flex;align-items:center;justify-content:center;gap:5px;font-weight:800;font-size:14px;flex:0 0 auto}
 .chip.sel{border-color:var(--berry);background:#ffe9f2;color:var(--berry)}
@@ -174,6 +198,15 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;p
 .mctl .act{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.2)}
 .mctl .act.go{background:var(--leaf);border-color:transparent}
 .mctl .act.warn{background:#ff4d6a;color:#fff;border-color:transparent}
+#soundNotice{display:none;align-items:center;justify-content:center;gap:8px;flex:0 0 auto;
+  background:var(--sun);color:#241a3d;font-weight:900;font-size:15px;padding:10px;border-radius:14px}
+#soundNotice:active{transform:scale(.98)}
+.seqdel{width:30px;flex:0 0 auto;height:34px;border-radius:9px;background:rgba(255,255,255,.14);
+  color:#fff;font-size:15px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.seqdel:active{transform:scale(.9);background:#ff4d6a}
+#songName{width:100%;height:54px;font-size:19px;text-align:center;border-radius:15px;
+  border:3px solid var(--line);background:#fff;font-weight:800;margin-bottom:13px;
+  -webkit-user-select:text;user-select:text}
 
 /* ---------- animation ---------- */
 .strip{flex:0 0 auto;background:#241a3d;padding:7px 9px;display:flex;align-items:center;gap:7px;
@@ -246,6 +279,22 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;p
 .mixrow label{width:64px;flex:0 0 auto;font-weight:900;font-size:14px;text-align:left}
 .mixrow input[type=range]{flex:1 1 auto;height:38px}
 #cpPreview{height:52px;border-radius:15px;border:3px solid var(--line);margin-bottom:13px}
+/* ---------- slide-out menu ---------- */
+#drawer{position:fixed;inset:0;background:rgba(20,14,45,.55);z-index:65;display:none}
+#drawer.on{display:block}
+#drawerPanel{position:absolute;left:0;top:0;bottom:0;width:min(310px,86vw);background:var(--paper);
+  box-shadow:6px 0 30px rgba(36,26,61,.35);padding:14px;overflow-y:auto;
+  -webkit-overflow-scrolling:touch;transform:translateX(-100%);transition:transform .22s ease;
+  padding-top:calc(14px + env(safe-area-inset-top,0px))}
+#drawer.on #drawerPanel{transform:translateX(0)}
+#drawerPanel h3{margin:6px 4px 10px;font-size:20px;font-weight:900;color:var(--grape-dark)}
+.dgroup{font-size:11px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--ink-soft);margin:14px 6px 6px}
+.ditem{display:flex;align-items:center;gap:12px;width:100%;padding:13px 12px;border-radius:16px;
+  background:var(--sky);margin-bottom:7px;font-weight:800;font-size:17px;text-align:left}
+.ditem .de{font-size:24px;line-height:1;flex:0 0 auto}
+.ditem.cur{background:#efe9ff;border:3px solid var(--grape)}
+.ditem:active{transform:scale(.97)}
 
 /* ---------- toast ---------- */
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(160%);
@@ -271,6 +320,7 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;p
 
 <div id="app">
   <header id="topbar">
+    <button class="tbtn icon" id="menuBtn" aria-label="Menu">&#9776;</button>
     <button class="tbtn icon" id="backBtn" aria-label="Home">&#127968;</button>
     <div id="title">Playbox</div>
     <button class="tbtn icon" id="helpBtn" aria-label="Help">&#10067;</button>
@@ -305,6 +355,7 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;p
         <div class="canvaswrap" id="paintWrap">
           <div class="canvasstack" id="paintStack">
             <canvas class="bg" id="paintBg"></canvas>
+            <canvas class="trace" id="paintTrace"></canvas>
             <canvas class="board" id="paintCanvas"></canvas>
             <canvas class="overlay" id="paintOverlay"></canvas>
           </div>
@@ -312,16 +363,29 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;p
       </div>
       <div class="subbar hide" id="shapeBar"></div>
       <div class="tray">
-        <div class="sizes" id="paintSizes"></div>
-        <div class="sep"></div>
-        <div class="swatches" id="paintColors"></div>
-        <div class="sep"></div>
-        <button class="act" id="importBtn">&#128247; Import</button>
-        <button class="act" id="envBtn">&#127794; Scene</button>
-        <button class="act" id="tplBtn">&#128444;&#65039; Traces</button>
-        <button class="act" id="undoBtn">&#8630; Undo</button>
-        <button class="act warn" id="clearBtn">&#128465;</button>
-        <button class="act go" id="savePaint">&#128190; Save</button>
+        <div class="trayscroll">
+          <div class="sizes" id="paintSizes"></div>
+          <div class="sep"></div>
+          <div class="swatches" id="paintColors"></div>
+          <div class="sep"></div>
+          <button class="act" id="zoomOut">&minus;</button>
+          <span id="zoomLbl" class="zlbl">100%</span>
+          <button class="act" id="zoomIn">+</button>
+          <button class="act" id="panBtn">&#9995;</button>
+          <button class="act" id="zoomFit">&#10530;</button>
+          <div class="sep"></div>
+          <button class="act" id="importBtn">&#128247; Import</button>
+          <button class="act" id="envBtn">&#127794; Scene</button>
+          <button class="act" id="tplBtn">&#128444;&#65039; Traces</button>
+          <button class="act" id="layerBtn">&#128441;&#65039; Layers</button>
+        </div>
+        <div class="trayfixed">
+          <button class="act" id="undoBtn" aria-label="Undo">&#8630;</button>
+          <button class="act" id="redoBtn" aria-label="Redo">&#8631;</button>
+          <button class="act" id="eraseBtn" aria-label="Eraser">&#129529;</button>
+          <button class="act warn" id="clearBtn" aria-label="Clear">&#128465;</button>
+          <button class="act go" id="savePaint" aria-label="Save">&#128190;</button>
+        </div>
       </div>
     </section>
 
@@ -332,6 +396,7 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;p
         <div class="canvaswrap" id="animWrap">
           <div class="canvasstack" id="animStack">
             <canvas class="bg" id="animBg"></canvas>
+            <canvas class="trace" id="animTrace"></canvas>
             <canvas class="board" id="animCanvas"></canvas>
             <canvas class="onion" id="animOnion"></canvas>
             <canvas class="overlay" id="animOverlay"></canvas>
@@ -339,13 +404,19 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;p
         </div>
       </div>
       <div class="tray">
-        <div class="sizes" id="animSizes"></div>
-        <div class="sep"></div>
-        <div class="swatches" id="animColors"></div>
-        <div class="sep"></div>
-        <button class="act" id="animEnvBtn">&#127794; Scene</button>
-        <button class="act" id="animUndo">&#8630;</button>
-        <button class="act warn" id="animClear">&#128465;</button>
+        <div class="trayscroll">
+          <div class="sizes" id="animSizes"></div>
+          <div class="sep"></div>
+          <div class="swatches" id="animColors"></div>
+          <div class="sep"></div>
+          <button class="act" id="animEnvBtn">&#127794; Scene</button>
+        </div>
+        <div class="trayfixed">
+          <button class="act" id="animUndo" aria-label="Undo">&#8630;</button>
+          <button class="act" id="animRedo" aria-label="Redo">&#8631;</button>
+          <button class="act" id="animErase" aria-label="Eraser">&#129529;</button>
+          <button class="act warn" id="animClear" aria-label="Clear">&#128465;</button>
+        </div>
       </div>
       <div class="strip" id="animStrip"></div>
     </section>
@@ -368,6 +439,7 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;p
     <!-- MUSIC -->
     <section class="screen" id="music">
       <div id="musicBody">
+        <div id="soundNotice"><span>&#128266; Tap here to turn the sound on</span></div>
         <div class="cattabs" id="catTabs"></div>
         <div class="cattabs" id="instTabs"></div>
         <div class="pads" id="pads"></div>
@@ -388,6 +460,7 @@ canvas.overlay{position:absolute;left:0;top:0;z-index:3;background:transparent;p
 
 <input type="file" accept="image/*" id="imgIn" style="display:none">
 <input type="file" accept="application/json,.json" id="bakIn" style="display:none">
+<div id="drawer"><nav id="drawerPanel" role="menu"></nav></div>
 <div id="modal"><div class="sheet" id="sheet"></div></div>
 <div id="toast"></div>
 
@@ -446,6 +519,9 @@ var S = {
   padCat: 'inst', padSound: 'bell',
   galFilter: 'all', galSort: 'new', selMode: false, selIds: [],
   extraSet: null,
+  traceFront: false, traceHidden: false, sceneHidden: false,
+  zoom: 1, panX: 0, panY: 0,
+  panMode: false,
   paintEnv: store.get('paintEnv','none'),
   animEnv: store.get('animEnv','none'),
   sceneEnv: store.get('sceneEnv','none')
@@ -484,7 +560,17 @@ $('modal').addEventListener('click', function(e){ if(e.target === $('modal')) cl
 
 /* A small sum keeps little fingers out of destructive actions.
    Not a security boundary - an older child will solve it. */
+/* Deleting used to ask a small sum. Brent's call: children can delete their
+   own work, so this just confirms plainly now. */
 function grownUpGate(title, onPass){
+  showModal('<h2>Delete?</h2><p>' + title + '</p>' +
+    '<div class="sheetrow"><button id="gateNo">No, keep it</button>' +
+    '<button class="go" id="gateYes">Yes, delete</button></div>');
+  $('gateNo').onclick = closeModal;
+  $('gateYes').onclick = function(){ closeModal(); onPass(); };
+}
+
+function unusedMathGate(title, onPass){
   var a = 3 + Math.floor(Math.random() * 7), b = 4 + Math.floor(Math.random() * 6);
   showModal('<h2>Grown-ups only</h2><p>' + title + '<br>What is <b>' + a + ' &times; ' + b + '</b>?</p>' +
     '<input id="gateIn" type="number" inputmode="numeric" autocomplete="off">' +
@@ -503,13 +589,15 @@ function grownUpGate(title, onPass){
    owns (paint or animate) via bindCanvas().
    ============================================================ */
 var DC = null, DX = null;      /* committed canvas + context */
+var TC = null, TX = null;      /* trace layer - outlines to colour inside */
 var OC = null, OX = null;      /* overlay used for live shape previews */
 var undoStacks = { paint: [], anim: [] };
 var undoKey = 'paint';
 var MAX_UNDO = 8;
 
-function bindCanvas(mainEl, overlayEl, key){
+function bindCanvas(mainEl, overlayEl, key, traceEl){
   DC = mainEl; DX = mainEl.getContext('2d');
+  TC = traceEl || null; TX = TC ? TC.getContext('2d') : null;
   OC = overlayEl; OX = overlayEl ? overlayEl.getContext('2d') : null;
   undoKey = key;
   DX.lineCap = 'round'; DX.lineJoin = 'round';
@@ -548,6 +636,8 @@ function fitStack(wrapEl, stackEl, mainEl, others){
   return true;
 }
 
+var redoStacks = { paint: [], anim: [] };
+
 function pushUndo(){
   var c = document.createElement('canvas');
   c.width = DC.width; c.height = DC.height;
@@ -555,13 +645,41 @@ function pushUndo(){
   var st = undoStacks[undoKey];
   st.push(c);
   if(st.length > MAX_UNDO) st.shift();
+  redoStacks[undoKey].length = 0;   /* a new edit ends the redo trail */
   refreshUndoButtons();
 }
+
+function snapshotCurrent(){
+  var c = document.createElement('canvas');
+  c.width = DC.width; c.height = DC.height;
+  c.getContext('2d').drawImage(DC, 0, 0);
+  return c;
+}
+
+function paintFrom(c){
+  DX.save(); DX.setTransform(1,0,0,1,0,0);
+  DX.clearRect(0,0,DC.width,DC.height);
+  DX.drawImage(c,0,0);
+  DX.restore(); DX.setTransform(DPR,0,0,DPR,0,0);
+  DX.lineCap='round'; DX.lineJoin='round';
+}
+
+function doRedo(){
+  var c = redoStacks[undoKey].pop();
+  if(!c){ toast('Nothing to redo'); return; }
+  undoStacks[undoKey].push(snapshotCurrent());
+  paintFrom(c);
+  refreshUndoButtons();
+  if(undoKey === 'anim') captureFrame();
+  wipDirty[undoKey] = true; wipSchedule();
+}
+
 
 function doUndo(){
   var st = undoStacks[undoKey];
   var c = st.pop();
-  if(!c) return;
+  if(!c){ toast('Nothing to undo'); return; }
+  redoStacks[undoKey].push(snapshotCurrent());
   DX.save(); DX.setTransform(1,0,0,1,0,0);
   DX.clearRect(0,0,DC.width,DC.height);
   DX.drawImage(c,0,0);
@@ -572,9 +690,14 @@ function doUndo(){
 }
 
 function refreshUndoButtons(){
-  var n = undoStacks[undoKey].length;
-  if(undoKey === 'paint' && $('undoBtn')) $('undoBtn').disabled = n === 0;
-  if(undoKey === 'anim' && $('animUndo')) $('animUndo').disabled = n === 0;
+  var n = undoStacks[undoKey].length, r = redoStacks[undoKey].length;
+  if(undoKey === 'paint'){
+    if($('undoBtn')) $('undoBtn').disabled = n === 0;
+    if($('redoBtn')) $('redoBtn').disabled = r === 0;
+  } else {
+    if($('animUndo')) $('animUndo').disabled = n === 0;
+    if($('animRedo')) $('animRedo').disabled = r === 0;
+  }
 }
 
 function clearBoard(){
@@ -587,13 +710,16 @@ function clearBoard(){
 }
 
 /* flatten a background + art pair into one opaque canvas for saving */
-function flatten(bgEl, artEl){
+function flatten(bgEl, artEl, traceLayer){
   var c = document.createElement('canvas');
   c.width = artEl.width; c.height = artEl.height;
   var g = c.getContext('2d');
   g.fillStyle = '#ffffff'; g.fillRect(0,0,c.width,c.height);
-  if(bgEl && bgEl.width) g.drawImage(bgEl, 0, 0, c.width, c.height);
+  if(bgEl && bgEl.width && !S.sceneHidden) g.drawImage(bgEl, 0, 0, c.width, c.height);
+  var tr = (traceLayer && traceLayer.width && !S.traceHidden) ? traceLayer : null;
+  if(tr && !S.traceFront) g.drawImage(tr, 0, 0, c.width, c.height);
   g.drawImage(artEl, 0, 0, c.width, c.height);
+  if(tr && S.traceFront) g.drawImage(tr, 0, 0, c.width, c.height);
   return c;
 }
 
@@ -812,16 +938,26 @@ function floodFill(sx, sy, hex){
 }
 
 /* ---------- pointer plumbing (shared by paint + animate) ---------- */
-var drawing = false, last = null, shapeStart = null;
+var drawing = false, last = null, shapeStart = null, panDrag = null;
 
 function localPos(e){
   var r = DC.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
+  /* r is the on-screen box, which already includes any zoom, so scale back
+     to the canvas's own coordinate space */
+  var kx = r.width ? DC.clientWidth / r.width : 1;
+  var ky = r.height ? DC.clientHeight / r.height : 1;
+  return { x: (e.clientX - r.left) * kx, y: (e.clientY - r.top) * ky };
 }
 
 function onDown(e){
   e.preventDefault();
   if(S.playingAnim) return;
+  if(S.panMode){
+    panDrag = { x:e.clientX, y:e.clientY, panX:S.panX, panY:S.panY };
+    drawing = true;
+    try{ DC.setPointerCapture(e.pointerId); }catch(err){}
+    return;
+  }
   var p = localPos(e);
 
   if(S.tool === 'select'){
@@ -860,6 +996,12 @@ function onDown(e){
 function onMove(e){
   if(!drawing) return;
   e.preventDefault();
+  if(S.panMode && panDrag){
+    S.panX = panDrag.panX + (e.clientX - panDrag.x);
+    S.panY = panDrag.panY + (e.clientY - panDrag.y);
+    clampPan(); applyView();
+    return;
+  }
   if(S.tool === 'select'){
     var q = localPos(e);
     if(SEL && SEL.grab){ SEL.x = q.x - SEL.grab.x; SEL.y = q.y - SEL.grab.y; drawSel(); return; }
@@ -895,6 +1037,7 @@ function onMove(e){
 
 function onUp(e){
   if(!drawing) return;
+  if(S.panMode){ panDrag = null; drawing = false; return; }
   if(S.tool === 'select'){
     drawing = false;
     if(SEL && SEL.grab){ SEL.grab = null; return; }
@@ -938,6 +1081,124 @@ function wirePointer(canvasEl){
 wirePointer($('paintCanvas'));
 wirePointer($('animCanvas'));
 
+/* ---------- layers ---------- */
+function traceCtx(){ return TX || DX; }
+
+function clearTrace(){
+  if(!TX || !TC) return;
+  TX.save(); TX.setTransform(1,0,0,1,0,0);
+  TX.clearRect(0,0,TC.width,TC.height);
+  TX.restore(); TX.setTransform(DPR,0,0,DPR,0,0);
+}
+
+function traceEl(){ return S.screen === 'anim' ? $('animTrace') : $('paintTrace'); }
+
+function applyLayerView(){
+  var t = traceEl();
+  if(t){
+    t.classList.toggle('front', !!S.traceFront);
+    t.style.display = S.traceHidden ? 'none' : 'block';
+  }
+  var b = S.screen === 'anim' ? $('animBg') : $('paintBg');
+  if(b) b.style.display = S.sceneHidden ? 'none' : 'block';
+}
+
+function openLayers(){
+  showModal('<h2>Layers</h2><p>What sits in front of what.</p>' +
+    '<div class="pickgrid">' +
+      '<button id="lyOrder"><span class="pe">' + (S.traceFront ? '\u2B06' : '\u2B07') + '</span>' +
+        (S.traceFront ? 'Trace in front' : 'Trace behind') + '</button>' +
+      '<button id="lyHide"><span class="pe">' + (S.traceHidden ? '\uD83D\uDC41\uFE0F' : '\uD83D\uDEAB') + '</span>' +
+        (S.traceHidden ? 'Show trace' : 'Hide trace') + '</button>' +
+      '<button id="lyClear"><span class="pe">\uD83D\uDDD1\uFE0F</span>Clear trace</button>' +
+      '<button id="lyScene"><span class="pe">' + (S.sceneHidden ? '\uD83D\uDC41\uFE0F' : '\uD83C\uDF32') + '</span>' +
+        (S.sceneHidden ? 'Show scene' : 'Hide scene') + '</button>' +
+    '</div><div class="sheetrow"><button class="go" id="lyDone">Done</button></div>');
+  $('lyOrder').onclick = function(){ S.traceFront = !S.traceFront; applyLayerView(); openLayers(); };
+  $('lyHide').onclick  = function(){ S.traceHidden = !S.traceHidden; applyLayerView(); openLayers(); };
+  $('lyScene').onclick = function(){ S.sceneHidden = !S.sceneHidden; applyLayerView(); openLayers(); };
+  $('lyClear').onclick = function(){ clearTrace(); closeModal(); toast('Trace cleared'); afterEdit(); };
+  $('lyDone').onclick  = closeModal;
+}
+/* ---------- zoom and pan ---------- */
+function applyView(){
+  var stack = S.screen === 'anim' ? $('animStack') : $('paintStack');
+  if(!stack) return;
+  stack.style.transform = 'translate(' + S.panX + 'px,' + S.panY + 'px) scale(' + S.zoom + ')';
+  var lbl = $('zoomLbl');
+  if(lbl) lbl.textContent = Math.round(S.zoom * 100) + '%';
+  var pb = $('panBtn');
+  if(pb) pb.classList.toggle('sel', S.panMode);
+}
+
+function setZoom(z, cx, cy){
+  var old = S.zoom;
+  S.zoom = Math.max(1, Math.min(6, z));
+  if(cx !== undefined){
+    /* keep the point under the fingers still */
+    var k = S.zoom / old;
+    S.panX = cx - (cx - S.panX) * k;
+    S.panY = cy - (cy - S.panY) * k;
+  }
+  clampPan();
+  applyView();
+}
+
+function clampPan(){
+  if(S.zoom <= 1){ S.panX = 0; S.panY = 0; return; }
+  var stack = S.screen === 'anim' ? $('animStack') : $('paintStack');
+  if(!stack) return;
+  var w = stack.clientWidth, h = stack.clientHeight;
+  var maxX = w * (S.zoom - 1) / 2, maxY = h * (S.zoom - 1) / 2;
+  S.panX = Math.max(-maxX, Math.min(maxX, S.panX));
+  S.panY = Math.max(-maxY, Math.min(maxY, S.panY));
+}
+
+function resetView(){ S.zoom = 1; S.panX = 0; S.panY = 0; applyView(); }
+
+/* two-finger pinch and drag, tracked on the wrapper so it works whatever
+   tool is selected */
+function wireGestures(wrapId){
+  var wrap = $(wrapId);
+  if(!wrap) return;
+  var pts = {};
+  var base = null;
+  function centre(){
+    var k = Object.keys(pts);
+    var a = pts[k[0]], b = pts[k[1]];
+    return { x:(a.x + b.x)/2, y:(a.y + b.y)/2,
+             d:Math.sqrt((a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y)) };
+  }
+  wrap.addEventListener('pointerdown', function(e){
+    pts[e.pointerId] = { x:e.clientX, y:e.clientY };
+    if(Object.keys(pts).length === 2){
+      onCancel();                 /* a second finger means gesture, not stroke */
+      var c = centre();
+      base = { d:c.d, zoom:S.zoom, x:c.x, y:c.y, panX:S.panX, panY:S.panY };
+    }
+  }, true);
+  wrap.addEventListener('pointermove', function(e){
+    if(!pts[e.pointerId]) return;
+    pts[e.pointerId] = { x:e.clientX, y:e.clientY };
+    if(Object.keys(pts).length === 2 && base){
+      e.preventDefault();
+      var c = centre();
+      S.panX = base.panX + (c.x - base.x);
+      S.panY = base.panY + (c.y - base.y);
+      if(base.d > 10) S.zoom = Math.max(1, Math.min(6, base.zoom * (c.d / base.d)));
+      clampPan();
+      applyView();
+    }
+  }, true);
+  function up(e){
+    delete pts[e.pointerId];
+    if(Object.keys(pts).length < 2) base = null;
+  }
+  wrap.addEventListener('pointerup', up, true);
+  wrap.addEventListener('pointercancel', up, true);
+}
+wireGestures('paintWrap');
+wireGestures('animWrap');
 /* ============================================================
    TOOL / COLOUR / SIZE UI
    ============================================================ */
@@ -1338,13 +1599,12 @@ function extraGroups(){
 function applyExtraTrace(entry){
   var img = new Image();
   img.onload = function(){
-    pushUndo();
-    clearBoard();
+    clearTrace();
     var z = cssSize(DC);
     var sc = Math.min(z.w / img.width, z.h / img.height) * 0.92;  /* breathing room */
     var w = Math.max(1, Math.round(img.width * sc)), h = Math.max(1, Math.round(img.height * sc));
     var keyed = keyOutWhite(img, Math.round(w * DPR), Math.round(h * DPR));
-    DX.drawImage(keyed, (z.w - w)/2, (z.h - h)/2, w, h);
+    traceCtx().drawImage(keyed, (z.w - w)/2, (z.h - h)/2, w, h);
     afterEdit();
     toast('Ready to colour!');
   };
@@ -2667,11 +2927,11 @@ function openTemplates(){
     bindAll('[data-cat]', function(b){ cat = b.getAttribute('data-cat'); render(); });
     bindAll('[data-paper]', function(b){ paper = b.getAttribute('data-paper'); render(); });
     bindAll('[data-tpl]', function(b){
-      pushUndo();
-      clearBoard();
-      renderTemplate(DX, DC.width, DC.height, b.getAttribute('data-tpl'), paper);
-      DX.setTransform(DPR,0,0,DPR,0,0);
-      DX.lineCap='round'; DX.lineJoin='round';
+      var g = traceCtx();
+      clearTrace();
+      renderTemplate(g, (TC||DC).width, (TC||DC).height, b.getAttribute('data-tpl'), paper);
+      g.setTransform(DPR,0,0,DPR,0,0);
+      g.lineCap='round'; g.lineJoin='round';
       closeModal(); toast('Ready to colour!');
       afterEdit();
     });
@@ -2692,14 +2952,37 @@ function bindAll(sel, fn){
    SCREEN: PAINT
    ============================================================ */
 function enterPaint(){
-  bindCanvas($('paintCanvas'), $('paintOverlay'), 'paint');
-  fitStack($('paintWrap'), $('paintStack'), $('paintCanvas'), [$('paintOverlay'), $('paintBg')]);
+  bindCanvas($('paintCanvas'), $('paintOverlay'), 'paint', $('paintTrace'));
+  fitStack($('paintWrap'), $('paintStack'), $('paintCanvas'),
+           [$('paintOverlay'), $('paintBg'), $('paintTrace')]);
   renderEnv($('paintBg'), S.paintEnv);
+  applyView(); applyLayerView();
   wipRestorePaint();
   buildRail('paintRail'); buildColors('paintColors'); buildSizes('paintSizes'); buildShapeBar();
   refreshUndoButtons();
 }
+$('redoBtn').addEventListener('click', doRedo);
+$('animRedo').addEventListener('click', doRedo);
+
+function pickEraser(){
+  S.tool = (S.tool === 'eraser') ? 'brush' : 'eraser';
+  buildRail('paintRail'); buildRail('animRail'); buildShapeBar();
+  toast(S.tool === 'eraser' ? 'Eraser' : 'Brush');
+}
+$('eraseBtn').addEventListener('click', pickEraser);
+$('animErase').addEventListener('click', pickEraser);
+
 $('undoBtn').addEventListener('click', doUndo);
+$('zoomIn').addEventListener('click', function(){ setZoom(S.zoom * 1.4); });
+$('zoomOut').addEventListener('click', function(){ setZoom(S.zoom / 1.4); });
+$('zoomFit').addEventListener('click', resetView);
+$('layerBtn').addEventListener('click', openLayers);
+$('panBtn').addEventListener('click', function(){
+  S.panMode = !S.panMode;
+  applyView();
+  toast(S.panMode ? 'Drag to move the picture' : 'Back to drawing');
+});
+
 $('tplBtn').addEventListener('click', openTemplates);
 
 /* ---------- import any picture, as an outline to trace or as a photo ---------- */
@@ -2841,12 +3124,11 @@ function saveMyTrace(img){
 function applyMyTrace(it){
   var img = new Image();
   img.onload = function(){
-    pushUndo();
-    clearBoard();
+    clearTrace();
     var z = cssSize(DC);
     var sc = Math.min(z.w / img.width, z.h / img.height) * 0.92;  /* breathing room */
     var w = img.width * sc, h = img.height * sc;
-    DX.drawImage(img, (z.w - w)/2, (z.h - h)/2, w, h);
+    traceCtx().drawImage(img, (z.w - w)/2, (z.h - h)/2, w, h);
     afterEdit();
     toast('Ready to colour!');
   };
@@ -2856,16 +3138,17 @@ function applyMyTrace(it){
 
 /* fit the picture inside the canvas without distorting it */
 function placeImport(img, asOutline){
-  pushUndo();
+  clearTrace();
   var z = cssSize(DC);
   var scale = Math.min(z.w / img.width, z.h / img.height);
   var w = Math.round(img.width * scale), h = Math.round(img.height * scale);
   var x = Math.round((z.w - w) / 2), y = Math.round((z.h - h) / 2);
+  var g = traceCtx();
   if(asOutline){
     var o = toOutline(img, Math.max(1, Math.round(w*DPR)), Math.max(1, Math.round(h*DPR)));
-    DX.drawImage(o, x, y, w, h);
+    g.drawImage(o, x, y, w, h);
   } else {
-    DX.drawImage(img, x, y, w, h);
+    g.drawImage(img, x, y, w, h);
   }
   afterEdit();
   toast(asOutline ? 'Ready to colour!' : 'Picture added');
@@ -2902,7 +3185,7 @@ function toOutline(img, w, h){
 }
 $('clearBtn').addEventListener('click', function(){ pushUndo(); clearBoard(); toast('Fresh paper!'); });
 $('savePaint').addEventListener('click', function(){
-  saveToGallery(flatten($('paintBg'), $('paintCanvas')), 'paint');
+  saveToGallery(flatten($('paintBg'), $('paintCanvas'), $('paintTrace')), 'paint');
 });
 $('envBtn').addEventListener('click', function(){
   openEnvPicker(S.paintEnv, function(id){
@@ -2915,9 +3198,11 @@ $('envBtn').addEventListener('click', function(){
    SCREEN: ANIMATE
    ============================================================ */
 function enterAnim(){
-  bindCanvas($('animCanvas'), $('animOverlay'), 'anim');
-  fitStack($('animWrap'), $('animStack'), $('animCanvas'), [$('animOverlay'), $('animOnion'), $('animBg')]);
+  bindCanvas($('animCanvas'), $('animOverlay'), 'anim', $('animTrace'));
+  fitStack($('animWrap'), $('animStack'), $('animCanvas'),
+           [$('animOverlay'), $('animOnion'), $('animBg'), $('animTrace')]);
   renderEnv($('animBg'), S.animEnv);
+  applyView(); applyLayerView();
   buildRail('animRail'); buildColors('animColors'); buildSizes('animSizes');
   wipRestoreAnim(function(restored){
     if(!restored && S.frames.length === 0) S.frames = [blankFrame()];
@@ -2992,7 +3277,9 @@ function frameThumb(f){
   var g = c.getContext('2d');
   g.fillStyle = '#fff'; g.fillRect(0,0,74,56);
   if($('animBg').width) g.drawImage($('animBg'), 0, 0, 74, 56);
+  if($('animTrace').width && !S.traceHidden && !S.traceFront) g.drawImage($('animTrace'), 0, 0, 74, 56);
   g.drawImage(f, 0, 0, 74, 56);
+  if($('animTrace').width && !S.traceHidden && S.traceFront) g.drawImage($('animTrace'), 0, 0, 74, 56);
   try{ return c.toDataURL('image/jpeg', 0.6); }catch(e){ return ''; }
 }
 
@@ -3391,6 +3678,39 @@ $('saveScene').addEventListener('click', function(){
    library costs zero bytes of download.
    ============================================================ */
 var actx = null;
+var audioReady = false;
+
+/* A phone starts its audio context suspended, and resume() resolves a moment
+   later. Sounds scheduled in between were queued against a clock that was not
+   running, so nothing came out. Unlock on the very first gesture anywhere in
+   the app, and let play() retry once the context is genuinely running. */
+function unlockAudio(){
+  var a = audio();
+  if(!a) return;
+  if(a.state === 'running'){ audioReady = true; return; }
+  try{
+    var b = a.createBuffer(1, 1, 22050);
+    var src = a.createBufferSource();
+    src.buffer = b;
+    src.connect(a.destination);
+    src.start(0);
+  }catch(e){}
+  if(a.resume){
+    a.resume().then(function(){ audioReady = (a.state === 'running'); refreshSoundNotice(); })
+              .catch(function(){});
+  }
+}
+document.addEventListener('pointerdown', unlockAudio, true);
+document.addEventListener('touchstart', unlockAudio, true);
+
+function soundIsOn(){ return !!(actx && actx.state === 'running'); }
+
+function refreshSoundNotice(){
+  var el = $('soundNotice');
+  if(!el) return;
+  el.style.display = soundIsOn() ? 'none' : 'flex';
+}
+
 function audio(){
   if(!actx){
     var AC = window.AudioContext || window.webkitAudioContext;
@@ -3410,6 +3730,9 @@ var SOUNDS = [
   { id:'flute',   name:'Flute',   emoji:'🦋', cat:'inst', type:'sine',     decay:0.80, gain:.22, soft:true },
   { id:'bass',    name:'Bass',    emoji:'🎸', cat:'inst', type:'triangle', decay:0.45, gain:.34, octave:-2 },
   { id:'organ',   name:'Organ',   emoji:'🎪', cat:'inst', type:'sawtooth', decay:0.60, gain:.14 },
+  { id:'guitar',  name:'Guitar',  emoji:'🎸', cat:'inst', pluck:true,      decay:1.10, gain:.30 },
+  { id:'strings', name:'Strings', emoji:'🎻', cat:'inst', type:'sawtooth', decay:1.50, gain:.13, bow:true },
+  { id:'harp',    name:'Harp',    emoji:'🪕', cat:'inst', type:'triangle', decay:1.30, gain:.24 },
   { id:'box',     name:'Music box',emoji:'✨',      cat:'inst', type:'sine',     decay:1.60, gain:.20, octave:1 },
   /* drums */
   { id:'kick',    name:'Kick',    emoji:'🥁', cat:'drum', drum:'kick' },
@@ -3450,16 +3773,41 @@ function noiseSrc(a, dur){
 function play(id, freq, when){
   var a = audio();
   if(!a) return;
+  if(a.state !== 'running'){
+    /* not awake yet - wake it and sound the note the moment it is */
+    if(a.resume) a.resume().then(function(){
+      refreshSoundNotice();
+      if(a.state === 'running') play(id, freq, 0);
+    }).catch(function(){});
+    return;
+  }
   var t = when || a.currentTime;
   var s = sound(id);
   if(s.drum) return playDrum(a, s.drum, t);
   if(s.fx)   return playFx(a, s.fx, t);
 
   var f = (freq || NOTES[0]) * Math.pow(2, s.octave || 0);
+
+  if(s.pluck){                      /* plucked string: filtered noise burst */
+    var n = noiseSrc(a, 0.02);
+    var bp = a.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = 12;
+    var dl = a.createDelay(); dl.delayTime.value = 1 / f;
+    var fb = a.createGain(); fb.gain.value = 0.86;
+    var pg = a.createGain();
+    pg.gain.setValueAtTime(s.gain, t);
+    pg.gain.exponentialRampToValueAtTime(0.0001, t + s.decay);
+    n.connect(bp); bp.connect(dl); dl.connect(fb); fb.connect(dl);
+    dl.connect(pg); bp.connect(pg); pg.connect(a.destination);
+    n.start(t);
+    setTimeout(function(){ try{ fb.disconnect(); }catch(e){} }, (s.decay + 0.3) * 1000);
+    return;
+  }
+
   var osc = a.createOscillator(), g = a.createGain();
   osc.type = s.type; osc.frequency.setValueAtTime(f, t);
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(s.gain, t + (s.soft ? 0.09 : 0.012));
+  g.gain.exponentialRampToValueAtTime(s.gain, t + (s.bow ? 0.22 : (s.soft ? 0.09 : 0.012)));
   g.gain.exponentialRampToValueAtTime(0.0001, t + s.decay);
   osc.connect(g); g.connect(a.destination);
   osc.start(t); osc.stop(t + s.decay + 0.05);
@@ -3615,16 +3963,36 @@ var CATS = [
 var STEPS = 16;
 var DEFAULT_ROWS = ['kick','snare','hat','bell','marimba','bass'];
 
-function blankGrid(){
+function blankGrid(rows){
   var out = [];
-  for(var r = 0; r < 6; r++){ var row = []; for(var i = 0; i < STEPS; i++) row.push(0); out.push(row); }
+  for(var r = 0; r < (rows || 6); r++){
+    var row = [];
+    for(var i = 0; i < STEPS; i++) row.push(0);
+    out.push(row);
+  }
   return out;
 }
 
+/* one snapshot per change so the grid can be stepped back */
+var gridUndo = [];
+function pushGridUndo(){
+  gridUndo.push({ g: grid.map(function(r){ return r.slice(); }), rows: seqRows.slice() });
+  if(gridUndo.length > 24) gridUndo.shift();
+}
+function undoGrid(){
+  var prev = gridUndo.pop();
+  if(!prev){ toast('Nothing to undo'); return; }
+  grid = prev.g; seqRows = prev.rows;
+  store.set('grid', grid); store.set('seqRows', seqRows);
+  buildSeq(); buildMusicControls();
+  toast('Undone');
+}
+
 var seqRows = store.get('seqRows', null);
-if(!seqRows || seqRows.length !== 6) seqRows = DEFAULT_ROWS.slice();
+if(!seqRows || !seqRows.length || seqRows.length > 12) seqRows = DEFAULT_ROWS.slice();
 var grid = store.get('grid', null);
-if(!grid || grid.length !== 6 || !grid[0] || grid[0].length !== STEPS) grid = blankGrid();
+if(!grid || grid.length !== seqRows.length || !grid[0] || grid[0].length !== STEPS)
+  grid = blankGrid(seqRows.length);
 var bpm = store.get('bpm', 100);
 
 var PRESETS = {
@@ -3733,6 +4101,7 @@ function buildMusic(){
   $('seq').style.display = isLittle() ? 'none' : 'block';
   if(!isLittle()) buildSeq();
   buildMusicControls();
+  refreshSoundNotice();
 }
 
 function buildMusicControls(){
@@ -3748,11 +4117,22 @@ function buildMusicControls(){
     return b;
   }
   mk('go', seqOn ? '⏸ Stop' : '▶ Play', function(){
+    unlockAudio();
     if(seqOn) stopSequencer(); else startSequencer();
     buildMusicControls();
   }, 'Play or stop');
   mk('', '🐢', function(){ setBpm(bpm - 12); }, 'Slower');
   mk('', '🐇', function(){ setBpm(bpm + 12); }, 'Faster');
+  mk('', '➕ Track', function(){
+    if(seqRows.length >= 12){ toast('That is the most tracks (12)'); return; }
+    pushGridUndo();
+    seqRows.push('bell');
+    grid.push(blankGrid(1)[0]);
+    store.set('seqRows', seqRows); store.set('grid', grid);
+    buildSeq(); buildMusicControls();
+    toast('Track added - tap its name to pick a sound');
+  }, 'Add a track');
+  mk('', '↶ Undo', undoGrid, 'Undo');
   var lbl = document.createElement('span');
   lbl.id = 'tempoLbl'; lbl.style.fontWeight = '800'; lbl.style.opacity = '.85';
   lbl.textContent = bpm + ' bpm';
@@ -3784,15 +4164,31 @@ function buildSeq(){
     nm.setAttribute('aria-label', 'Change sound for track ' + (ri+1));
     nm.addEventListener('click', function(){ openSoundPicker(ri); });
     r.appendChild(nm);
+
+    var del = document.createElement('button');
+    del.className = 'seqdel';
+    del.innerHTML = '&times;';
+    del.setAttribute('aria-label', 'Remove track ' + (ri+1));
+    del.addEventListener('click', function(){
+      if(seqRows.length <= 1){ toast('Keep at least one track'); return; }
+      pushGridUndo();
+      seqRows.splice(ri, 1); grid.splice(ri, 1);
+      store.set('seqRows', seqRows); store.set('grid', grid);
+      buildSeq(); buildMusicControls();
+      toast('Track removed');
+    });
+    r.appendChild(del);
     for(var si = 0; si < STEPS; si++){
       (function(si){
         var c = document.createElement('button');
         c.className = 'cell' + (si % 4 === 0 ? ' beat' : '') + (grid[ri][si] ? ' on' : '');
         c.setAttribute('data-r', ri); c.setAttribute('data-s', si);
         c.addEventListener('click', function(){
+          pushGridUndo();
           grid[ri][si] = grid[ri][si] ? 0 : 1;
           c.classList.toggle('on');
           store.set('grid', grid);
+          unlockAudio();
           if(grid[ri][si]) play(seqRows[ri], NOTES[2 + (ri % 4)]);
         });
         r.appendChild(c);
@@ -3838,11 +4234,16 @@ function openSongs(){
   html += '</div><p style="margin:10px 0 6px;font-weight:900">Your songs</p><div class="pickgrid">';
   var names = Object.keys(saved);
   if(names.length === 0) html += '<span style="grid-column:1/-1;color:#5b5175;font-weight:600">Nothing saved yet</span>';
-  names.forEach(function(n){ html += '<button data-mine="' + n + '"><span class="pe">⭐</span>' + n + '</button>'; });
+  names.forEach(function(n){
+    html += '<button data-mine="' + n + '" style="position:relative"><span class="pe">⭐</span>' + n +
+            '<span data-del="' + n + '" style="position:absolute;top:2px;right:4px;font-size:15px;' +
+            'padding:2px 5px;border-radius:8px;background:#ffe1e6;color:#c02a4f">&times;</span></button>';
+  });
   html += '</div><div class="sheetrow"><button id="songSave">💾 Save mine</button><button id="songNo">Close</button></div>';
   showModal(html);
 
   function loadSong(song){
+    pushGridUndo();
     seqRows = song.rows.slice();
     grid = song.g.map(function(r){ return r.slice(); });
     bpm = song.bpm;
@@ -3857,15 +4258,42 @@ function openSongs(){
   for(var j = 0; j < ms.length; j++){
     (function(b){ b.addEventListener('click', function(){ loadSong(saved[b.getAttribute('data-mine')]); }); })(ms[j]);
   }
-  $('songSave').onclick = function(){
-    var existing = Object.keys(saved);
-    if(existing.length >= 6){ toast('That is 6 songs already'); return; }
-    var name = 'Song ' + (existing.length + 1);
+  $('songSave').onclick = function(){ nameAndSaveSong(saved); };
+  $('songNo').onclick = closeModal;
+  var dels = $('sheet').querySelectorAll('[data-del]');
+  for(var k = 0; k < dels.length; k++){
+    (function(b){
+      b.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        var nm = b.getAttribute('data-del');
+        grownUpGate('Delete the song "' + nm + '"?', function(){
+          delete saved[nm];
+          store.set('songs', saved);
+          openSongs();
+          toast('Deleted');
+        });
+      });
+    })(dels[k]);
+  }
+
+function nameAndSaveSong(saved){
+  var existing = Object.keys(saved);
+  showModal('<h2>Name your song</h2><p>So you can find it again.</p>' +
+    '<input id="songName" type="text" maxlength="24" placeholder="My song" ' +
+    'value="Song ' + (existing.length + 1) + '">' +
+    '<div class="sheetrow"><button id="snNo">Cancel</button>' +
+    '<button class="go" id="snOk">Save</button></div>');
+  setTimeout(function(){ try{ $('songName').focus(); $('songName').select(); }catch(e){} }, 60);
+  $('snNo').onclick = closeModal;
+  $('snOk').onclick = function(){
+    var name = ($('songName').value || '').trim().slice(0, 24) || ('Song ' + (existing.length + 1));
+    if(!saved[name] && existing.length >= 12){ toast('That is 12 songs already'); return; }
     saved[name] = { rows: seqRows.slice(), g: grid.map(function(r){ return r.slice(); }), bpm: bpm };
-    if(store.set('songs', saved)){ closeModal(); toast('Saved as ' + name); }
+    if(store.set('songs', saved)){ closeModal(); toast('Saved as "' + name + '"'); }
     else toast('No room to save');
   };
-  $('songNo').onclick = closeModal;
+}
+
 }
 
 function startSequencer(){
@@ -3928,7 +4356,7 @@ function saveAnimation(){
   if(S.frames.length < 2){ toast('Add another frame first!'); return; }
   var frames = [];
   for(var i = 0; i < S.frames.length; i++){
-    var d = thumbData(flatten($('animBg'), S.frames[i]), 320);
+    var d = thumbData(flatten($('animBg'), S.frames[i], $('animTrace')), 320);
     if(!d){ toast('Could not save this one'); return; }
     frames.push(d);
   }
@@ -4404,7 +4832,9 @@ function wipSave(){
   try{
     if(wipDirty.paint){
       var d = canvasPNG($('paintCanvas'), 800);
-      if(d) w.paint = { data:d, env:S.paintEnv };
+      if(d) w.paint = { data:d, env:S.paintEnv,
+                        trace: canvasPNG($('paintTrace'), 800),
+                        front: !!S.traceFront };
     }
     if(wipDirty.anim && S.frames.length){
       captureFrame();
@@ -4454,6 +4884,13 @@ function wipRestorePaint(){
   if(w.paint.env){                  /* the scene it was drawn against */
     S.paintEnv = w.paint.env;
     renderEnv($('paintBg'), S.paintEnv);
+  }
+  S.traceFront = !!w.paint.front;
+  applyLayerView();
+  if(w.paint.trace){
+    var ti = new Image();
+    ti.onload = function(){ var z = cssSize(DC); traceCtx().drawImage(ti, 0, 0, z.w, z.h); };
+    ti.src = w.paint.trace;
   }
   var img = new Image();
   img.onload = function(){
@@ -4529,6 +4966,7 @@ function go(name){
   S.screen = name;
   $('title').textContent = TITLES[name] || 'Playbox';
   $('backBtn').style.visibility = (name === 'home') ? 'hidden' : 'visible';
+  closeDrawer();
 
   if(name === 'paint') setTimeout(enterPaint, 0);
   if(name === 'anim')  setTimeout(enterAnim, 0);
@@ -4536,6 +4974,65 @@ function go(name){
   if(name === 'music') buildMusic();
   if(name === 'gallery') buildGallery();
 }
+
+$('soundNotice').addEventListener('click', function(){
+  unlockAudio();
+  setTimeout(function(){
+    refreshSoundNotice();
+    if(soundIsOn()){ play('bell', NOTES[4]); toast('Sound is on'); }
+    else toast('Check the volume and the silent switch');
+  }, 250);
+});
+
+/* ---------- slide-out menu ---------- */
+var MENU = [
+  { group:'Make something' },
+  { id:'paint',   emoji:'\uD83C\uDFA8', name:'Paint' },
+  { id:'trace',   emoji:'\uD83D\uDDBC\uFE0F', name:'Trace' },
+  { id:'anim',    emoji:'\uD83C\uDFAC', name:'Animate' },
+  { id:'scene',   emoji:'\uD83E\uDD84', name:'Stickers' },
+  { id:'music',   emoji:'\uD83C\uDFB5', name:'Music' },
+  { group:'Your things' },
+  { id:'gallery', emoji:'\uD83D\uDDC2\uFE0F', name:'My Stuff' },
+  { act:'backup', emoji:'\uD83D\uDCBE', name:'Back up' },
+  { act:'restore',emoji:'\uD83D\uDCC2', name:'Restore' },
+  { group:'Other' },
+  { act:'full',   emoji:'\u26F6', name:'Full screen' },
+  { act:'help',   emoji:'\u2753', name:'How to use Playbox' }
+];
+
+function openDrawer(){
+  var p = $('drawerPanel');
+  p.innerHTML = '<h3>Playbox</h3>';
+  MENU.forEach(function(m){
+    if(m.group){
+      var g = document.createElement('div');
+      g.className = 'dgroup'; g.textContent = m.group;
+      p.appendChild(g);
+      return;
+    }
+    var b = document.createElement('button');
+    b.className = 'ditem' + (m.id && m.id === S.screen ? ' cur' : '');
+    b.setAttribute('role', 'menuitem');
+    b.innerHTML = '<span class="de">' + m.emoji + '</span>' + m.name;
+    b.addEventListener('click', function(){
+      closeDrawer();
+      if(m.id === 'trace'){ go('paint'); setTimeout(openTemplates, 200); return; }
+      if(m.id){ go(m.id); return; }
+      if(m.act === 'backup'){ exportBackup(); return; }
+      if(m.act === 'restore'){ $('bakIn').click(); return; }
+      if(m.act === 'full'){ toggleFullscreen(); return; }
+      if(m.act === 'help'){ showHelp(); return; }
+    });
+    p.appendChild(b);
+  });
+  $('drawer').classList.add('on');
+}
+function closeDrawer(){ $('drawer').classList.remove('on'); }
+
+$('menuBtn').addEventListener('click', openDrawer);
+$('drawer').addEventListener('click', function(e){ if(e.target === $('drawer')) closeDrawer(); });
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDrawer(); });
 
 $('backBtn').addEventListener('click', function(){ go('home'); });
 var cards = document.querySelectorAll('[data-go]');
@@ -4561,7 +5058,9 @@ function applyAge(){
   if(S.screen === 'anim') buildStrip();
 }
 
-$('helpBtn').addEventListener('click', function(){
+$('helpBtn').addEventListener('click', showHelp);
+
+function showHelp(){
   showModal('<h2>How to use Playbox</h2>' +
     '<p style="text-align:left;line-height:1.6">' +
     '<b>\uD83C\uDFA8 Paint</b> \u2013 pick a brush on the left, a colour along the bottom.<br>' +
@@ -4576,9 +5075,11 @@ $('helpBtn').addEventListener('click', function(){
     'tick several at once and delete or share them.' +
     '</p><div class="sheetrow"><button class="go" id="helpDone">Got it</button></div>');
   $('helpDone').onclick = closeModal;
-});
+}
 
-$('fsBtn').addEventListener('click', function(){
+$('fsBtn').addEventListener('click', function(){ toggleFullscreen(); });
+
+function toggleFullscreen(){
   var d = document, el = d.documentElement;
   var isFs = d.fullscreenElement || d.webkitFullscreenElement;
   try{
@@ -4589,7 +5090,7 @@ $('fsBtn').addEventListener('click', function(){
     else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     else toast('Full screen is not available here');
   }catch(e){ toast('Full screen is not available here'); }
-});
+}
 
 /* Silk and mobile Chromium will rubber-band or zoom the page mid-stroke;
    these keep a dragging finger drawing instead of scrolling. */
@@ -4603,11 +5104,13 @@ function onResize(){
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(function(){
     if(S.screen === 'paint'){
-      fitStack($('paintWrap'), $('paintStack'), $('paintCanvas'), [$('paintOverlay'), $('paintBg')]);
+      fitStack($('paintWrap'), $('paintStack'), $('paintCanvas'),
+               [$('paintOverlay'), $('paintBg'), $('paintTrace')]);
       renderEnv($('paintBg'), S.paintEnv);
     }
     if(S.screen === 'anim'){
-      fitStack($('animWrap'), $('animStack'), $('animCanvas'), [$('animOverlay'), $('animOnion'), $('animBg')]);
+      fitStack($('animWrap'), $('animStack'), $('animCanvas'),
+               [$('animOverlay'), $('animOnion'), $('animBg'), $('animTrace')]);
       renderEnv($('animBg'), S.animEnv);
       loadFrame(S.frameIdx);
     }
